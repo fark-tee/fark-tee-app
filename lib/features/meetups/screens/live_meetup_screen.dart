@@ -603,20 +603,62 @@ class _MemberRow extends StatelessWidget {
               member.arrivalStatus != MemberArrivalStatus.arrived &&
               member.arrivalStatus != MemberArrivalStatus.returned) ...[
             const SizedBox(width: AppSpacing.sm),
-            SizedBox(
-              width: 84,
-              child: PillButton(
-                label: isOnCooldown ? 'Nudged' : 'ฝากที',
-                onPressed: isOnCooldown
-                    ? null
-                    : () => context.read<MeetupsController>().sendNudge(
-                        meetupId,
-                        member.userId,
-                      ),
-              ),
+            _NudgeButton(
+              isOnCooldown: isOnCooldown,
+              onPressed: isOnCooldown
+                  ? null
+                  : () => context.read<MeetupsController>().sendNudge(
+                      meetupId,
+                      member.userId,
+                    ),
             ),
           ],
         ],
+      ),
+    );
+  }
+}
+
+/// Dark filled pill with the nudge mascot icon, matching the "ฝากที" mockup -
+/// unlike [PillButton] (a generic full-width CTA), this is a fixed-size chip
+/// with a custom illustration leading the label, so it's built standalone
+/// rather than extending the shared primitive for a one-off look.
+class _NudgeButton extends StatelessWidget {
+  const _NudgeButton({required this.isOnCooldown, required this.onPressed});
+
+  final bool isOnCooldown;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 100,
+      child: FilledButton(
+        onPressed: onPressed,
+        style: FilledButton.styleFrom(
+          backgroundColor: AppColors.bgSurface,
+          foregroundColor: AppColors.textPrimary,
+          disabledBackgroundColor: AppColors.bgSurface.withValues(alpha: 0.5),
+          disabledForegroundColor: AppColors.textMuted,
+          shape: const StadiumBorder(),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Opacity(
+              opacity: isOnCooldown ? 0.5 : 1,
+              child: Image.asset(
+                'assets/images/mascots/nudge.png',
+                width: 20,
+                height: 20,
+              ),
+            ),
+            const SizedBox(width: 6),
+            Text(isOnCooldown ? 'Nudged' : 'ฝากที'),
+          ],
+        ),
       ),
     );
   }

@@ -125,7 +125,7 @@ class _MeetupDetailScreenState extends State<MeetupDetailScreen> {
               _LiveMembersSection(meetup: meetup)
             else
               _MembersSection(
-                members: meetup.otherMembers,
+                members: meetup.members,
                 badgeFor: _inviteStatusBadge,
               ),
           ],
@@ -273,7 +273,7 @@ class _LiveMembersSection extends StatelessWidget {
           ),
         ),
         const SizedBox(height: AppSpacing.xl),
-        _MembersSection(members: meetup.otherMembers, badgeFor: _arrivalStatusBadge),
+        _MembersSection(members: meetup.members, badgeFor: _arrivalStatusBadge),
       ],
     );
   }
@@ -294,13 +294,10 @@ class _MembersSection extends StatelessWidget {
       children: [
         const SectionHeader(title: 'Members'),
         const SizedBox(height: AppSpacing.md),
-        if (members.isEmpty)
-          Text('No other members yet.', style: AppTextStyles.captionMd)
-        else
-          for (final member in members) ...[
-            _MemberRow(member: member, badge: badgeFor(member)),
-            const SizedBox(height: AppSpacing.md),
-          ],
+        for (final member in members) ...[
+          _MemberRow(member: member, badge: badgeFor(member)),
+          const SizedBox(height: AppSpacing.md),
+        ],
       ],
     );
   }
