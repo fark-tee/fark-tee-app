@@ -1,11 +1,8 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart' show kDebugMode;
 
 import '../auth/auth_models.dart';
 import '../auth/token_storage.dart';
 import '../config/app_config.dart';
-import '../debug/network_log_interceptor.dart';
-import '../debug/network_log_store.dart';
 
 /// Wraps a Dio instance that automatically attaches the stored access token
 /// to every request and, on a 401, silently redeems the refresh token once
@@ -48,16 +45,6 @@ class ApiClient {
         },
       ),
     );
-
-    if (kDebugMode) {
-      // Added after the auth interceptor above, so it sits closer to the
-      // network on the way out and fires *first* on the way back - it sees
-      // the original 401 before the auth interceptor's retry logic
-      // consumes/resolves it, and each retried call gets its own entry.
-      final logInterceptor = NetworkLogInterceptor(NetworkLogStore.instance);
-      dio.interceptors.add(logInterceptor);
-      _plainDio.interceptors.add(logInterceptor);
-    }
   }
 
   late final Dio dio;
