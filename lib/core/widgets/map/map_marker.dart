@@ -12,6 +12,7 @@ class MapMarker {
     required this.label,
     this.isCurrentUser = false,
     this.caption,
+    this.profileImageUrl,
   });
 
   final String id;
@@ -24,4 +25,8 @@ class MapMarker {
 
   /// Small text shown under a member marker, e.g. "8 min".
   final String? caption;
+
+  /// The member's profile photo, shown as the pin itself instead of
+  /// [label]/a colored default pin when set.
+  final String? profileImageUrl;
 }

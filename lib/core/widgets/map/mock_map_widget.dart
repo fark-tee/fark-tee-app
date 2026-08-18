@@ -223,7 +223,10 @@ class _MemberPin extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final circle = Container(
+    final imageUrl = marker.profileImageUrl;
+    final hasImage = imageUrl != null && imageUrl.isNotEmpty;
+
+    return Container(
       width: 32,
       height: 32,
       decoration: BoxDecoration(
@@ -233,20 +236,28 @@ class _MemberPin extends StatelessWidget {
           color: marker.isCurrentUser ? AppColors.accentDanger : Colors.white,
           width: marker.isCurrentUser ? 3 : 2,
         ),
+        image: hasImage
+            ? DecorationImage(
+                image: NetworkImage(imageUrl),
+                fit: BoxFit.cover,
+                onError: (_, _) {},
+              )
+            : null,
         boxShadow: const [
           BoxShadow(color: Colors.black26, blurRadius: 3, offset: Offset(0, 1)),
         ],
       ),
       alignment: Alignment.center,
-      child: Text(
-        marker.label,
-        style: const TextStyle(
-          color: AppColors.textPrimary,
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
+      child: hasImage
+          ? null
+          : Text(
+              marker.label,
+              style: const TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
     );
-    return circle;
   }
 }

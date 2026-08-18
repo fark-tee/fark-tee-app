@@ -43,13 +43,21 @@ class _GoingHomeScreenState extends State<GoingHomeScreen> {
     setState(() => _loading = true);
 
     final controller = context.read<MeetupsController>();
-    await controller.goHome(
+    final messenger = ScaffoldMessenger.of(context);
+    final succeeded = await controller.goHome(
       widget.meetupId,
       destinationLabel: _selectedDestination,
     );
 
     if (!mounted) return;
     setState(() => _loading = false);
+
+    if (!succeeded) {
+      if (controller.errorMessage != null) {
+        messenger.showSnackBar(SnackBar(content: Text(controller.errorMessage!)));
+      }
+      return;
+    }
 
     context.go('/home');
   }

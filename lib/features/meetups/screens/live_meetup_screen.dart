@@ -89,6 +89,7 @@ class _LiveMeetupScreenState extends State<LiveMeetupScreen> {
                     label: member.initials,
                     isCurrentUser: member.isCurrentUser,
                     caption: _captionFor(member),
+                    profileImageUrl: member.profileImageUrl,
                   ),
               ],
             ),
@@ -108,6 +109,23 @@ class _LiveMeetupScreenState extends State<LiveMeetupScreen> {
       return '${member.displayName.split(' ').first}\n${member.etaMinutes} min';
     }
     return member.displayName.split(' ').first;
+  }
+}
+
+/// Runs a [MeetupsController] trip action (start/arrive) and, if it fails,
+/// surfaces `controller.errorMessage` via a snackbar - these calls used to be
+/// fire-and-forget, so a rejected request (e.g. a still-pending invite) left
+/// positions silently empty with no feedback to the user.
+Future<void> _runTripAction(
+  BuildContext context,
+  Future<bool> Function(MeetupsController controller) action,
+) async {
+  final controller = context.read<MeetupsController>();
+  final messenger = ScaffoldMessenger.of(context);
+
+  final succeeded = await action(controller);
+  if (!succeeded && controller.errorMessage != null) {
+    messenger.showSnackBar(SnackBar(content: Text(controller.errorMessage!)));
   }
 }
 
@@ -133,53 +151,58 @@ class _TopBar extends StatelessWidget {
           color: AppColors.bgBase.withValues(alpha: 0.85),
           borderRadius: BorderRadius.circular(AppRadius.md),
         ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            InkWell(
-              onTap: () => context.pop(),
-              borderRadius: BorderRadius.circular(AppRadius.full),
-              child: const Padding(
-                padding: EdgeInsets.all(4),
-                child: Icon(
-                  Icons.chevron_left,
-                  color: AppColors.textPrimary,
-                  size: 24,
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              InkWell(
+                onTap: () => context.pop(),
+                borderRadius: BorderRadius.circular(AppRadius.full),
+                child: const Padding(
+                  padding: EdgeInsets.all(4),
+                  child: Icon(
+                    Icons.chevron_left,
+                    color: AppColors.textPrimary,
+                    size: 24,
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(width: AppSpacing.xs),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(meetup.location.name, style: AppTextStyles.titleMd),
-                  const SizedBox(height: 2),
-                  Row(
-                    children: [
-                      const Text('●', style: TextStyle(
-                        color: AppColors.accentDanger,
-                        fontSize: 10,
-                      )),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          'Live · ${meetup.arrivedCount} arrived · $onTheWayCount on the way',
-                          style: AppTextStyles.captionMd,
-                          overflow: TextOverflow.ellipsis,
+              const SizedBox(width: AppSpacing.xs),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(meetup.location.name, style: AppTextStyles.titleMd),
+                    const SizedBox(height: 2),
+                    Row(
+                      children: [
+                        const Text(
+                          '●',
+                          style: TextStyle(
+                            color: AppColors.accentDanger,
+                            fontSize: 10,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                ],
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            'Live · ${meetup.arrivedCount} arrived · $onTheWayCount on the way',
+                            style: AppTextStyles.captionMd,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(width: AppSpacing.sm),
-            Text(
-              formatTime12h(meetup.startTime),
-              style: AppTextStyles.bodyMd,
-            ),
-          ],
+              const SizedBox(width: AppSpacing.sm),
+              Text(
+                formatTime12h(meetup.startTime),
+                style: AppTextStyles.bodyMd,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -201,7 +224,9 @@ class _MemberSheet extends StatelessWidget {
         return Container(
           decoration: const BoxDecoration(
             color: AppColors.bgElevated,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
+            borderRadius: BorderRadius.vertical(
+              top: Radius.circular(AppRadius.lg),
+            ),
           ),
           child: ListView(
             controller: scrollController,
@@ -308,9 +333,10 @@ class _CurrentUserStatusCard extends StatelessWidget {
             const SizedBox(height: AppSpacing.md),
             PillButton(
               label: "I've Arrived",
-              onPressed: () => context
-                  .read<MeetupsController>()
-                  .confirmArrival(meetup.id),
+              onPressed: () => _runTripAction(
+                context,
+                (controller) => controller.confirmArrival(meetup.id),
+              ),
             ),
           ],
         );
@@ -326,9 +352,10 @@ class _CurrentUserStatusCard extends StatelessWidget {
             const SizedBox(height: AppSpacing.md),
             PillButton(
               label: "I've Left",
-              onPressed: () => context
-                  .read<MeetupsController>()
-                  .markCurrentUserLeft(meetup.id),
+              onPressed: () => _runTripAction(
+                context,
+                (controller) => controller.markCurrentUserLeft(meetup.id),
+              ),
             ),
           ],
         );
@@ -359,7 +386,10 @@ class _MemberRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
       child: Row(
         children: [
-          AvatarCircle(initials: member.initials, imageUrl: member.profileImageUrl),
+          AvatarCircle(
+            initials: member.initials,
+            imageUrl: member.profileImageUrl,
+          ),
           const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(
@@ -370,7 +400,8 @@ class _MemberRow extends StatelessWidget {
                 Row(
                   children: [
                     StatusBadge(label: label, color: color),
-                    if (member.arrivalStatus == MemberArrivalStatus.onTheWay) ...[
+                    if (member.arrivalStatus ==
+                        MemberArrivalStatus.onTheWay) ...[
                       const SizedBox(width: AppSpacing.sm),
                       Text(
                         '${member.etaMinutes} min',
@@ -390,9 +421,10 @@ class _MemberRow extends StatelessWidget {
                 label: isOnCooldown ? 'Nudged' : 'ฝากที',
                 onPressed: isOnCooldown
                     ? null
-                    : () => context
-                        .read<MeetupsController>()
-                        .sendNudge(meetupId, member.userId),
+                    : () => context.read<MeetupsController>().sendNudge(
+                        meetupId,
+                        member.userId,
+                      ),
               ),
             ),
           ],

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
 import '../../core/auth/auth_models.dart';
@@ -42,6 +43,11 @@ class MeetupsController extends ChangeNotifier {
 
   Meetup? selectedMeetup;
   StreamSubscription<Meetup>? _liveSubscription;
+
+  /// Set when [markCurrentUserLeft], [confirmArrival], or [goHome] fails, so
+  /// the calling screen can surface it - these calls used to fail silently,
+  /// which read as positions/trips mysteriously never showing up.
+  String? errorMessage;
 
   final Map<String, DateTime> _nudgeCooldownUntil = {};
   static const nudgeCooldown = Duration(seconds: 45);
@@ -194,22 +200,63 @@ class MeetupsController extends ChangeNotifier {
     _liveSubscription = null;
   }
 
-  Future<void> markCurrentUserLeft(String meetupId) async {
-    await _repository.setCurrentUserArrivalStatus(
-      meetupId,
-      MemberArrivalStatus.onTheWay,
-    );
+  Future<bool> markCurrentUserLeft(String meetupId) async {
+    errorMessage = null;
+    try {
+      await _repository.setCurrentUserArrivalStatus(
+        meetupId,
+        MemberArrivalStatus.onTheWay,
+      );
+      return true;
+    } on DioException catch (e) {
+      errorMessage = _tripErrorMessage(e);
+      notifyListeners();
+      return false;
+    }
   }
 
-  Future<void> confirmArrival(String meetupId) async {
-    await _repository.setCurrentUserArrivalStatus(
-      meetupId,
-      MemberArrivalStatus.arrived,
-    );
+  Future<bool> confirmArrival(String meetupId) async {
+    errorMessage = null;
+    try {
+      await _repository.setCurrentUserArrivalStatus(
+        meetupId,
+        MemberArrivalStatus.arrived,
+      );
+      return true;
+    } on DioException catch (e) {
+      errorMessage = _tripErrorMessage(e);
+      notifyListeners();
+      return false;
+    }
   }
 
-  Future<void> goHome(String meetupId, {required String destinationLabel}) async {
-    await _repository.goHome(meetupId, destinationLabel: destinationLabel);
+  Future<bool> goHome(String meetupId, {required String destinationLabel}) async {
+    errorMessage = null;
+    try {
+      await _repository.goHome(meetupId, destinationLabel: destinationLabel);
+      return true;
+    } on DioException catch (e) {
+      errorMessage = _tripErrorMessage(e);
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Maps the backend's `{code, message}` trip-start error body to copy a
+  /// user can act on - `NOT_PARTY_MEMBER` in particular covers the case
+  /// where an invite is still pending, which otherwise surfaced as location
+  /// sharing that silently never started.
+  String _tripErrorMessage(DioException e) {
+    final data = e.response?.data;
+    final code = data is Map ? data['code'] as String? : null;
+    switch (code) {
+      case 'NOT_PARTY_MEMBER':
+        return "You haven't accepted this meetup's invite yet, so your location can't be shared.";
+      case 'PARTY_NOT_FOUND':
+        return 'This meetup no longer exists.';
+      default:
+        return 'Could not update your status. Please try again.';
+    }
   }
 
   bool isNudgeOnCooldown(String memberId) {
