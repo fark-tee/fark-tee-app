@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import '../../../core/auth/auth_models.dart';
 import '../../../core/widgets/map/lat_lng.dart';
 import '../models/grouped_meetups.dart';
@@ -6,6 +8,7 @@ import '../models/meetup_enums.dart';
 import '../models/meetup_invite.dart';
 import '../models/meetup_location.dart';
 import '../models/meetup_member.dart';
+import '../models/meetup_story.dart';
 
 /// Meetup data access. `MockMeetupRepository` is the only implementation for
 /// now (no backend yet) - once one exists, a `HttpMeetupRepository` can
@@ -66,4 +69,11 @@ abstract class MeetupRepository {
 
   /// Declines a pending invite, removing yourself from the meetup.
   Future<void> declineInvite(String meetupId);
+
+  /// Uploads [imageFile] as a new story photo in this meetup, visible to
+  /// every party member.
+  Future<void> postStory(String meetupId, File imageFile);
+
+  /// A single member's story photos in this meetup, most recent first.
+  Future<List<MeetupStory>> listMemberStories(String meetupId, String userId);
 }

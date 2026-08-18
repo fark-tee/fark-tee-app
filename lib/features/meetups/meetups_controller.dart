@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
@@ -14,6 +15,7 @@ import 'models/meetup_enums.dart';
 import 'models/meetup_invite.dart';
 import 'models/meetup_location.dart';
 import 'models/meetup_member.dart';
+import 'models/meetup_story.dart';
 
 /// Owns meetup lists, the currently-open meetup, the create-meetup wizard
 /// draft, and the live-simulation subscription. Same public-mutable-field +
@@ -254,7 +256,10 @@ class MeetupsController extends ChangeNotifier {
   /// user can act on - `NOT_PARTY_MEMBER` in particular covers the case
   /// where an invite is still pending, which otherwise surfaced as location
   /// sharing that silently never started.
-  String _tripErrorMessage(DioException e) {
+  String _tripErrorMessage(
+    DioException e, {
+    String fallback = 'Could not update your status. Please try again.',
+  }) {
     final data = e.response?.data;
     final code = data is Map ? data['code'] as String? : null;
     switch (code) {
@@ -263,7 +268,7 @@ class MeetupsController extends ChangeNotifier {
       case 'PARTY_NOT_FOUND':
         return 'This meetup no longer exists.';
       default:
-        return 'Could not update your status. Please try again.';
+        return fallback;
     }
   }
 
@@ -276,6 +281,25 @@ class MeetupsController extends ChangeNotifier {
     _nudgeCooldownUntil[memberId] = DateTime.now().add(nudgeCooldown);
     notifyListeners();
     await _repository.sendNudge(meetupId, memberId);
+  }
+
+  Future<bool> postStory(String meetupId, File imageFile) async {
+    errorMessage = null;
+    try {
+      await _repository.postStory(meetupId, imageFile);
+      return true;
+    } on DioException catch (e) {
+      errorMessage = _tripErrorMessage(
+        e,
+        fallback: 'Could not upload your story. Please try again.',
+      );
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<List<MeetupStory>> fetchMemberStories(String meetupId, String userId) {
+    return _repository.listMemberStories(meetupId, userId);
   }
 
   LatLng venuePosition(Meetup meetup) => meetup.location.position;

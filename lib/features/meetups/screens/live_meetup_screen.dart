@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/theme/app_colors.dart';
@@ -18,6 +20,7 @@ import '../meetups_controller.dart';
 import '../models/meetup.dart';
 import '../models/meetup_enums.dart';
 import '../models/meetup_member.dart';
+import 'story_viewer_screen.dart';
 
 /// Full-screen live map + draggable bottom sheet showing every member's
 /// simulated live position and the current user's own arrival state machine.
@@ -30,8 +33,13 @@ class LiveMeetupScreen extends StatefulWidget {
   State<LiveMeetupScreen> createState() => _LiveMeetupScreenState();
 }
 
+const _sheetInitialSize = 0.35;
+const _sheetMinSize = 0.15;
+const _sheetMaxSize = 0.85;
+
 class _LiveMeetupScreenState extends State<LiveMeetupScreen> {
   Timer? _cooldownRefreshTimer;
+  final _sheetController = DraggableScrollableController();
 
   @override
   void initState() {
@@ -52,6 +60,7 @@ class _LiveMeetupScreenState extends State<LiveMeetupScreen> {
   @override
   void dispose() {
     _cooldownRefreshTimer?.cancel();
+    _sheetController.dispose();
     context.read<MeetupsController>().stopWatchingLive();
     super.dispose();
   }
@@ -97,7 +106,11 @@ class _LiveMeetupScreenState extends State<LiveMeetupScreen> {
           SafeArea(
             child: _TopBar(meetup: meetup, onTheWayCount: onTheWayCount),
           ),
-          _MemberSheet(meetup: meetup),
+          _MemberSheet(meetup: meetup, sheetController: _sheetController),
+          _StoryCameraOverlay(
+            sheetController: _sheetController,
+            meetupId: meetup.id,
+          ),
         ],
       ),
     );
@@ -127,6 +140,51 @@ Future<void> _runTripAction(
   if (!succeeded && controller.errorMessage != null) {
     messenger.showSnackBar(SnackBar(content: Text(controller.errorMessage!)));
   }
+}
+
+/// Opens the camera, then uploads whatever was captured as a new story photo
+/// for [meetupId].
+Future<void> _captureAndPostStory(BuildContext context, String meetupId) async {
+  final picked = await ImagePicker().pickImage(
+    source: ImageSource.camera,
+    maxWidth: 1600,
+    imageQuality: 85,
+  );
+  if (picked == null || !context.mounted) return;
+
+  await _runTripAction(
+    context,
+    (controller) => controller.postStory(meetupId, File(picked.path)),
+  );
+}
+
+/// Fetches [member]'s stories for [meetupId] and, if any exist, opens the
+/// full-screen viewer; otherwise surfaces a snackbar instead of a silent
+/// no-op tap.
+Future<void> _openMemberStories(
+  BuildContext context,
+  String meetupId,
+  MeetupMember member,
+) async {
+  final controller = context.read<MeetupsController>();
+  final stories = await controller.fetchMemberStories(meetupId, member.userId);
+  if (!context.mounted) return;
+
+  if (stories.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('${member.displayName.split(' ').first} has no stories yet'),
+      ),
+    );
+    return;
+  }
+
+  Navigator.of(context).push(
+    MaterialPageRoute(
+      fullscreenDialog: true,
+      builder: (_) => StoryViewerScreen(member: member, stories: stories),
+    ),
+  );
 }
 
 class _TopBar extends StatelessWidget {
@@ -210,16 +268,18 @@ class _TopBar extends StatelessWidget {
 }
 
 class _MemberSheet extends StatelessWidget {
-  const _MemberSheet({required this.meetup});
+  const _MemberSheet({required this.meetup, required this.sheetController});
 
   final Meetup meetup;
+  final DraggableScrollableController sheetController;
 
   @override
   Widget build(BuildContext context) {
     return DraggableScrollableSheet(
-      initialChildSize: 0.35,
-      minChildSize: 0.15,
-      maxChildSize: 0.85,
+      controller: sheetController,
+      initialChildSize: _sheetInitialSize,
+      minChildSize: _sheetMinSize,
+      maxChildSize: _sheetMaxSize,
       builder: (context, scrollController) {
         return Container(
           decoration: const BoxDecoration(
@@ -268,10 +328,62 @@ class _MemberSheet extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: AppSpacing.lg),
-              for (final member in meetup.otherMembers)
+              for (final member in meetup.members)
                 _MemberRow(meetupId: meetup.id, member: member),
               const SizedBox(height: AppSpacing.xxl),
             ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// Floating shutter button pinned to the top-right of [_MemberSheet]'s
+/// current top edge. Lives in [LiveMeetupScreen]'s own top-level `Stack`
+/// (a sibling of the sheet, not nested inside it) and tracks [sheetController]
+/// to follow the sheet as it's dragged.
+///
+/// It can't live inside the sheet's own builder: `DraggableScrollableSheet`'s
+/// render box is only as tall as its current drag extent, and Flutter's
+/// default hit-testing rejects any tap outside a box's own size before it
+/// even looks at children - so a button positioned above that box's top edge
+/// (even with `Clip.none`, which only affects painting) would render there
+/// but never receive taps; they'd fall through to whatever is behind it.
+class _StoryCameraOverlay extends StatelessWidget {
+  const _StoryCameraOverlay({
+    required this.sheetController,
+    required this.meetupId,
+  });
+
+  final DraggableScrollableController sheetController;
+  final String meetupId;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: sheetController,
+      builder: (context, _) {
+        final screenHeight = MediaQuery.sizeOf(context).height;
+        final extent = sheetController.isAttached
+            ? sheetController.size
+            : _sheetInitialSize;
+        final sheetTop = screenHeight * (1 - extent);
+        return Positioned(
+          top: sheetTop - 25,
+          right: AppSpacing.lg,
+          child: Material(
+            color: AppColors.textPrimary,
+            shape: const CircleBorder(),
+            elevation: 4,
+            child: InkWell(
+              onTap: () => _captureAndPostStory(context, meetupId),
+              customBorder: const CircleBorder(),
+              child: const Padding(
+                padding: EdgeInsets.all(14),
+                child: Icon(Icons.camera_alt, color: AppColors.bgBase, size: 22),
+              ),
+            ),
           ),
         );
       },
@@ -296,6 +408,7 @@ class _CurrentUserStatusCard extends StatelessWidget {
         imagePath: 'assets/images/mascots/all_arrived.png',
         action: _StatusActionPill(
           label: 'แยกย้ายกลับ',
+          icon: Icons.home,
           onPressed: () => context.push('/meetup/${meetup.id}/going-home'),
         ),
       );
@@ -327,6 +440,7 @@ class _CurrentUserStatusCard extends StatelessWidget {
           imagePath: 'assets/images/mascots/prep.png',
           action: _StatusActionPill(
             label: 'ออกแล้วจ้า',
+            icon: Icons.directions_car,
             onPressed: () => _runTripAction(
               context,
               (controller) => controller.markCurrentUserLeft(meetup.id),
@@ -397,28 +511,34 @@ class _StatusCard extends StatelessWidget {
   }
 }
 
-/// Compact outlined pill for the status card's inline action - unlike
-/// [PillButton] it sizes to its content instead of stretching full-width,
-/// matching the mockups' small "ออกแล้วจ้า" / "แยกย้ายกลับ" buttons.
+/// Light filled pill with a red outline for the status card's inline action,
+/// matching the mockups' "ออกแล้วจ้า" / "แยกย้ายกลับ" buttons - a light
+/// surface (not the card's dark background) with a colored border, dark
+/// text/icon, stretched full-width like [PillButton].
 class _StatusActionPill extends StatelessWidget {
-  const _StatusActionPill({required this.label, required this.onPressed});
+  const _StatusActionPill({
+    required this.label,
+    required this.icon,
+    required this.onPressed,
+  });
 
   final String label;
+  final IconData icon;
   final VoidCallback? onPressed;
 
   @override
   Widget build(BuildContext context) {
-    return OutlinedButton.icon(
-      onPressed: onPressed,
-      icon: const Icon(Icons.check_box, size: 16),
-      label: Text(label),
-      style: OutlinedButton.styleFrom(
-        foregroundColor: AppColors.textPrimary,
-        side: const BorderSide(color: AppColors.accentDanger),
-        shape: const StadiumBorder(),
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md,
-          vertical: AppSpacing.xs,
+    return SizedBox(
+      width: double.infinity,
+      child: FilledButton.icon(
+        onPressed: onPressed,
+        icon: Icon(icon, size: 18),
+        label: Text(label),
+        style: FilledButton.styleFrom(
+          backgroundColor: AppColors.textBody,
+          foregroundColor: AppColors.bgBase,
+          side: const BorderSide(color: AppColors.accentDanger, width: 2),
+          shape: const StadiumBorder(),
         ),
       ),
     );
@@ -449,9 +569,12 @@ class _MemberRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
       child: Row(
         children: [
-          AvatarCircle(
-            initials: member.initials,
-            imageUrl: member.profileImageUrl,
+          GestureDetector(
+            onTap: () => _openMemberStories(context, meetupId, member),
+            child: AvatarCircle(
+              initials: member.initials,
+              imageUrl: member.profileImageUrl,
+            ),
           ),
           const SizedBox(width: AppSpacing.md),
           Expanded(
@@ -476,7 +599,8 @@ class _MemberRow extends StatelessWidget {
               ],
             ),
           ),
-          if (member.arrivalStatus != MemberArrivalStatus.arrived &&
+          if (!member.isCurrentUser &&
+              member.arrivalStatus != MemberArrivalStatus.arrived &&
               member.arrivalStatus != MemberArrivalStatus.returned) ...[
             const SizedBox(width: AppSpacing.sm),
             SizedBox(

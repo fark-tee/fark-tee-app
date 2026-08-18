@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import '../../../core/auth/auth_models.dart';
 import '../../../core/widgets/map/lat_lng.dart';
@@ -8,6 +9,7 @@ import '../models/meetup_enums.dart';
 import '../models/meetup_invite.dart';
 import '../models/meetup_location.dart';
 import '../models/meetup_member.dart';
+import '../models/meetup_story.dart';
 import 'meetup_repository.dart';
 
 /// In-memory mock data. No backend yet - see [MeetupRepository]'s doc
@@ -31,6 +33,9 @@ class MockMeetupRepository implements MeetupRepository {
   final Map<String, Timer> _liveTimers = {};
   final Map<String, int> _tickCounts = {};
   int _idCounter = 100;
+
+  /// Keyed by `"$meetupId:$userId"`.
+  final Map<String, List<MeetupStory>> _storiesByMemberKey = {};
 
   static const _networkDelay = Duration(milliseconds: 350);
 
@@ -405,6 +410,31 @@ class MockMeetupRepository implements MeetupRepository {
   Future<void> declineInvite(String meetupId) async {
     await Future.delayed(_networkDelay);
     _invites.removeWhere((i) => i.meetupId == meetupId);
+  }
+
+  @override
+  Future<void> postStory(String meetupId, File imageFile) async {
+    await Future.delayed(_networkDelay);
+    final meetup = await getMeetup(meetupId);
+    final key = '$meetupId:${meetup.currentUser.userId}';
+    _storiesByMemberKey.putIfAbsent(key, () => []).insert(
+      0,
+      MeetupStory(
+        id: 'story-${_idCounter++}',
+        userId: meetup.currentUser.userId,
+        imageUrl: imageFile.path,
+        createdAt: DateTime.now(),
+      ),
+    );
+  }
+
+  @override
+  Future<List<MeetupStory>> listMemberStories(
+    String meetupId,
+    String userId,
+  ) async {
+    await Future.delayed(_networkDelay);
+    return List.unmodifiable(_storiesByMemberKey['$meetupId:$userId'] ?? []);
   }
 
   void _tick(String meetupId, StreamController<Meetup> controller) {
