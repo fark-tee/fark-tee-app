@@ -170,7 +170,7 @@ Future<void> _openMemberStories(
   if (stories.isEmpty) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('${member.displayName.split(' ').first} has no stories yet'),
+        content: Text('${member.displayName.split(' ').first} ยังไม่มีสตอรี่'),
       ),
     );
     return;
@@ -241,7 +241,7 @@ class _TopBar extends StatelessWidget {
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
-                            'Live · ${meetup.arrivedCount} arrived · $onTheWayCount on the way',
+                            'ถึงแล้ว ${meetup.arrivedCount} คน · กำลังเดินทาง $onTheWayCount คน',
                             style: AppTextStyles.captionMd,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -304,9 +304,10 @@ class _MemberSheet extends StatelessWidget {
               _CurrentUserStatusCard(meetup: meetup),
               const SizedBox(height: AppSpacing.xl),
               SectionHeader(
-                title: 'Members',
+                title: 'สมาชิก',
+                titleStyle: AppTextStyles.captionMd,
                 trailing: Text(
-                  '${meetup.arrivedCount} of ${meetup.members.length} arrived',
+                  'ถึงแล้ว ${meetup.arrivedCount} จาก ${meetup.members.length} คน',
                   style: AppTextStyles.captionMd,
                 ),
               ),

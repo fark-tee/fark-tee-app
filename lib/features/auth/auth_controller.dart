@@ -81,7 +81,7 @@ class AuthController extends ChangeNotifier {
         _update(AuthStatus.authenticated);
       }
     } catch (_) {
-      errorMessage = 'Sign-in was cancelled or failed. Please try again.';
+      errorMessage = 'การเข้าสู่ระบบถูกยกเลิกหรือไม่สำเร็จ กรุณาลองใหม่อีกครั้ง';
       notifyListeners();
     }
   }
@@ -115,7 +115,7 @@ class AuthController extends ChangeNotifier {
       try {
         user = await _authRepository.uploadProfileImage(profileImageFile);
       } on DioException {
-        errorMessage = 'Could not upload your photo. Please try again.';
+        errorMessage = 'อัปโหลดรูปภาพไม่สำเร็จ กรุณาลองใหม่อีกครั้ง';
         notifyListeners();
         return false;
       }
@@ -132,9 +132,9 @@ class AuthController extends ChangeNotifier {
       return true;
     } on DioException catch (e) {
       if (e.response?.statusCode == 409) {
-        usernameError = 'That username is already taken';
+        usernameError = 'ชื่อผู้ใช้นี้ถูกใช้ไปแล้ว';
       } else {
-        errorMessage = 'Could not save your profile. Please try again.';
+        errorMessage = 'บันทึกโปรไฟล์ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง';
       }
       notifyListeners();
       return false;

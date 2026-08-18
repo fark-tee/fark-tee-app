@@ -131,7 +131,7 @@ class _HomeScreenState extends State<HomeScreen> {
           id: 'current-position',
           position: position,
           type: MapMarkerType.member,
-          label: 'You',
+          label: 'คุณ',
           isCurrentUser: true,
         ),
     ];
@@ -324,7 +324,7 @@ class _SearchResults extends StatelessWidget {
           : results.isEmpty
           ? Padding(
               padding: const EdgeInsets.all(AppSpacing.lg),
-              child: Text('No places found', style: AppTextStyles.captionMd),
+              child: Text('ไม่พบสถานที่', style: AppTextStyles.captionMd),
             )
           : ListView.separated(
               shrinkWrap: true,
@@ -442,7 +442,7 @@ class _ActiveGroupsCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AppSpacing.xs),
-          Text('$arrived of $total arrived', style: AppTextStyles.captionMd),
+          Text('ถึงแล้ว $arrived จาก $total คน', style: AppTextStyles.captionMd),
         ],
       ),
     );

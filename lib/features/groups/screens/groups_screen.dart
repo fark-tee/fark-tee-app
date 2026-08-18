@@ -37,7 +37,7 @@ class _GroupsScreenState extends State<GroupsScreen> {
     } catch (_) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Couldn't accept invite")),
+        const SnackBar(content: Text('ตอบรับคำเชิญไม่สำเร็จ')),
       );
     }
   }
@@ -48,7 +48,7 @@ class _GroupsScreenState extends State<GroupsScreen> {
     } catch (_) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Couldn't decline invite")),
+        const SnackBar(content: Text('ปฏิเสธคำเชิญไม่สำเร็จ')),
       );
     }
   }
@@ -83,7 +83,7 @@ class _GroupsScreenState extends State<GroupsScreen> {
                   : isEmpty && invites.isEmpty
                   ? Center(
                       child: Text(
-                        'No groups yet',
+                        'ยังไม่มีตี้',
                         style: AppTextStyles.captionMd,
                       ),
                     )
@@ -104,17 +104,17 @@ class _GroupsScreenState extends State<GroupsScreen> {
                           ),
                         if (groups.tonight.isNotEmpty)
                           _MeetupSection(
-                            title: 'Tonight',
+                            title: 'วันนี้',
                             meetups: groups.tonight,
                             isTonight: true,
                           ),
                         if (groups.upcoming.isNotEmpty)
                           _MeetupSection(
-                            title: 'Upcoming',
+                            title: 'กำลังจะถึง',
                             meetups: groups.upcoming,
                           ),
                         if (groups.past.isNotEmpty)
-                          _MeetupSection(title: 'Past', meetups: groups.past),
+                          _MeetupSection(title: 'ที่ผ่านมา', meetups: groups.past),
                       ],
                     ),
             ),
@@ -145,7 +145,7 @@ class _InviteSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SectionHeader(title: 'Invites'),
+          SectionHeader(title: 'คำเชิญ'),
           const SizedBox(height: AppSpacing.sm),
           for (final invite in invites) ...[
             _InviteCard(
@@ -184,7 +184,7 @@ class _InviteCard extends StatelessWidget {
           Text(invite.title, style: AppTextStyles.titleMd),
           const SizedBox(height: 2),
           Text(
-            '${invite.invitedByName} invited you · ${invite.destinationName}',
+            '${invite.invitedByName} เชิญคุณ · ${invite.destinationName}',
             style: AppTextStyles.captionMd,
           ),
           const SizedBox(height: 2),
@@ -198,7 +198,7 @@ class _InviteCard extends StatelessWidget {
               Expanded(
                 child: OutlinedButton(
                   onPressed: loading ? null : onDecline,
-                  child: const Text('Decline'),
+                  child: const Text('ปฏิเสธ'),
                 ),
               ),
               const SizedBox(width: AppSpacing.sm),
@@ -211,7 +211,7 @@ class _InviteCard extends StatelessWidget {
                           height: 18,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : const Text('Accept'),
+                      : const Text('ตอบรับ'),
                 ),
               ),
             ],
@@ -315,7 +315,7 @@ class _MeetupCard extends StatelessWidget {
                   ),
                   const SizedBox(height: AppSpacing.xs),
                   Text(
-                    '$arrived of $total arrived',
+                    'ถึงแล้ว $arrived จาก $total คน',
                     style: AppTextStyles.captionMd,
                   ),
                 ],

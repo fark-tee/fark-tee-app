@@ -3,17 +3,17 @@
 library;
 
 const _months = [
-  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  'ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.',
+  'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.',
 ];
 
 const _monthsFull = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
+  'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
+  'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม',
 ];
 
 const _weekdaysFull = [
-  'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday',
+  'วันจันทร์', 'วันอังคาร', 'วันพุธ', 'วันพฤหัสบดี', 'วันศุกร์', 'วันเสาร์', 'วันอาทิตย์',
 ];
 
 const _bangkokOffset = Duration(hours: 7);
@@ -49,10 +49,10 @@ String formatLongDate(DateTime dt) {
 
 String formatRelative(DateTime dt) {
   final diff = DateTime.now().toUtc().difference(dt.toUtc());
-  if (diff.inSeconds < 60) return 'Just now';
-  if (diff.inMinutes < 60) return '${diff.inMinutes} min ago';
-  if (diff.inHours < 24) return '${diff.inHours} hr ago';
-  if (diff.inDays < 7) return '${diff.inDays} d ago';
+  if (diff.inSeconds < 60) return 'เมื่อสักครู่';
+  if (diff.inMinutes < 60) return 'เมื่อ ${diff.inMinutes} นาทีที่แล้ว';
+  if (diff.inHours < 24) return 'เมื่อ ${diff.inHours} ชม. ที่แล้ว';
+  if (diff.inDays < 7) return 'เมื่อ ${diff.inDays} วันที่แล้ว';
   return formatShortDate(dt);
 }
 
@@ -62,5 +62,5 @@ String formatDayLabel(DateTime dt) {
   final now = _toBangkok(DateTime.now());
   final isSameDay =
       bkk.year == now.year && bkk.month == now.month && bkk.day == now.day;
-  return isSameDay ? 'Tonight' : formatShortDate(dt);
+  return isSameDay ? 'คืนนี้' : formatShortDate(dt);
 }

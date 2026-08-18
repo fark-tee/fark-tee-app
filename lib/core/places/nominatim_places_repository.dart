@@ -67,7 +67,7 @@ class NominatimPlacesRepository implements PlacesRepository {
   }
 
   PlaceResult _toPlaceResult(Map<String, dynamic> json) {
-    final displayName = json['display_name'] as String? ?? 'Unknown place';
+    final displayName = json['display_name'] as String? ?? 'ไม่ทราบชื่อสถานที่';
     final shortName = (json['name'] as String?)?.trim();
     final name = (shortName != null && shortName.isNotEmpty)
         ? shortName

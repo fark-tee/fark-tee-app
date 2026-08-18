@@ -43,13 +43,13 @@ class _SignInScreenState extends State<SignInScreen> {
                 const Icon(Icons.directions_car_filled, size: 72),
                 const SizedBox(height: 16),
                 Text(
-                  'Welcome to fark-tee',
+                  'ยินดีต้อนรับสู่ fark-tee',
                   style: Theme.of(context).textTheme.headlineSmall,
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  'Create an account to get started.',
+                  'สร้างบัญชีเพื่อเริ่มต้นใช้งาน',
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 32),
@@ -63,7 +63,7 @@ class _SignInScreenState extends State<SignInScreen> {
                         )
                       : const Icon(Icons.login),
                   label: Text(
-                    _loading ? 'Signing in...' : 'Continue with Google',
+                    _loading ? 'กำลังเข้าสู่ระบบ...' : 'เข้าสู่ระบบด้วย Google',
                   ),
                 ),
               ],

@@ -9,8 +9,8 @@ import '../../../../core/widgets/pill_button.dart';
 import '../../meetups_controller.dart';
 
 const _monthNames = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
+  'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
+  'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม',
 ];
 
 /// Step 2 of the Create Meetup wizard: name the meetup and pick a date/time.
@@ -85,7 +85,7 @@ class _MeetupDetailsStepState extends State<MeetupDetailsStep> {
     widget.onConfirmed();
   }
 
-  String _formatDate(DateTime date) => '${_monthNames[date.month - 1]} ${date.day}, ${date.year}';
+  String _formatDate(DateTime date) => '${date.day} ${_monthNames[date.month - 1]} ${date.year}';
 
   @override
   Widget build(BuildContext context) {
@@ -99,7 +99,7 @@ class _MeetupDetailsStepState extends State<MeetupDetailsStep> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Name', style: AppTextStyles.labelSm),
+                Text('ชื่อตี้', style: AppTextStyles.labelSm),
                 const SizedBox(height: AppSpacing.sm),
                 Container(
                   decoration: BoxDecoration(
@@ -114,7 +114,7 @@ class _MeetupDetailsStepState extends State<MeetupDetailsStep> {
                     minLines: 1,
                     maxLines: 3,
                     decoration: InputDecoration(
-                      hintText: 'Dinner meetup, splitting the bill for dessert',
+                      hintText: 'เช่น มื้อเย็น หารค่าขนมกัน',
                       hintStyle: AppTextStyles.bodyMd.copyWith(color: AppColors.textMuted),
                       border: InputBorder.none,
                       contentPadding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
@@ -123,19 +123,19 @@ class _MeetupDetailsStepState extends State<MeetupDetailsStep> {
                   ),
                 ),
                 const SizedBox(height: AppSpacing.lg),
-                Text('Date', style: AppTextStyles.labelSm),
+                Text('วันที่', style: AppTextStyles.labelSm),
                 const SizedBox(height: AppSpacing.sm),
                 _PickerRow(
                   icon: Icons.calendar_today_outlined,
-                  label: _date == null ? 'Select date' : _formatDate(_date!),
+                  label: _date == null ? 'เลือกวันที่' : _formatDate(_date!),
                   onTap: _pickDate,
                 ),
                 const SizedBox(height: AppSpacing.lg),
-                Text('Time', style: AppTextStyles.labelSm),
+                Text('เวลา', style: AppTextStyles.labelSm),
                 const SizedBox(height: AppSpacing.sm),
                 _PickerRow(
                   icon: Icons.access_time,
-                  label: _time == null ? 'Select time' : _time!.format(context),
+                  label: _time == null ? 'เลือกเวลา' : _time!.format(context),
                   onTap: _pickTime,
                 ),
                 const SizedBox(height: AppSpacing.lg),
@@ -156,7 +156,7 @@ class _MeetupDetailsStepState extends State<MeetupDetailsStep> {
         ),
         const SizedBox(height: AppSpacing.lg),
         PillButton(
-          label: 'Confirm Details',
+          label: 'ยืนยันรายละเอียด',
           onPressed: _canConfirm ? _confirm : null,
         ),
         const SizedBox(height: AppSpacing.lg),

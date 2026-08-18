@@ -36,9 +36,9 @@ class NudgeNotificationService {
   final FlutterLocalNotificationsPlugin plugin;
 
   static const String channelId = 'nudge_channel';
-  static const String channelName = 'Nudge Alerts';
+  static const String channelName = 'แจ้งเตือนเร่งเพื่อน';
   static const String channelDescription =
-      'Full-screen alerts when a friend nudges you to hurry up to a meetup.';
+      'แจ้งเตือนเต็มจอเมื่อเพื่อนเร่งให้คุณรีบมาที่นัด';
 
   static const AndroidNotificationChannel _androidChannel = AndroidNotificationChannel(
     channelId,

@@ -23,7 +23,7 @@ class CreateMeetupScreen extends StatefulWidget {
 }
 
 class _CreateMeetupScreenState extends State<CreateMeetupScreen> {
-  static const _stepTitles = ['Select Location', 'Meetup Details', 'Invite Friends'];
+  static const _stepTitles = ['เลือกสถานที่', 'รายละเอียดตี้', 'เชิญเพื่อน'];
 
   int _step = 0;
 
@@ -117,7 +117,7 @@ class _WizardHeader extends StatelessWidget {
               ),
               const SizedBox(height: 2),
               Text(
-                'Create Meetup · Step ${step + 1} of 3',
+                'สร้างตี้ · ขั้นตอนที่ ${step + 1} จาก 3',
                 style: AppTextStyles.captionMd,
               ),
             ],

@@ -12,7 +12,7 @@ class LocationService {
   Future<LatLng> getCurrentPosition() async {
     if (!await Geolocator.isLocationServiceEnabled()) {
       throw const LocationServiceException(
-        'Location services are turned off. Enable them to share your position.',
+        'บริการระบุตำแหน่งถูกปิดอยู่ กรุณาเปิดใช้งานเพื่อแชร์ตำแหน่งของคุณ',
       );
     }
 
@@ -24,7 +24,7 @@ class LocationService {
     if (permission == LocationPermission.denied ||
         permission == LocationPermission.deniedForever) {
       throw const LocationServiceException(
-        'Location permission is required to share your position.',
+        'ต้องได้รับสิทธิ์เข้าถึงตำแหน่งเพื่อแชร์ตำแหน่งของคุณ',
       );
     }
 

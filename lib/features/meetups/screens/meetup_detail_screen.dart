@@ -88,10 +88,10 @@ class _MeetupDetailScreenState extends State<MeetupDetailScreen> {
           TextButton(
             onPressed: () {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Sharing is not available yet')),
+                const SnackBar(content: Text('ยังใช้งานการแชร์ไม่ได้ในตอนนี้')),
               );
             },
-            child: const Text('Share'),
+            child: const Text('แชร์'),
           ),
         ],
       ),
@@ -146,20 +146,20 @@ class _InfoBlock extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _InfoRow(label: 'Location', value: meetup.location.name),
+          _InfoRow(label: 'สถานที่', value: meetup.location.name),
           const SizedBox(height: AppSpacing.md),
           Row(
             children: [
               Expanded(
                 child: _InfoRow(
-                  label: 'Date',
+                  label: 'วันที่',
                   value: formatLongDate(meetup.startTime),
                 ),
               ),
               const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: _InfoRow(
-                  label: 'Time',
+                  label: 'เวลา',
                   value: formatTime24h(meetup.startTime),
                 ),
               ),
@@ -210,13 +210,13 @@ class _LocationSharingRulePanel extends StatelessWidget {
           const Icon(Icons.lock_clock_outlined, color: AppColors.textMuted, size: 28),
           const SizedBox(height: AppSpacing.md),
           Text(
-            'Member locations will be shown 1 hour before the meetup starts',
+            'จะแสดงตำแหน่งของสมาชิก 1 ชั่วโมงก่อนเริ่มตี้',
             textAlign: TextAlign.center,
             style: AppTextStyles.bodyMd,
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(
-            'Location sharing starts in ${_countdownLabel(meetup.locationSharingOpensAt)}',
+            'เริ่มแชร์ตำแหน่งในอีก ${_countdownLabel(meetup.locationSharingOpensAt)}',
             textAlign: TextAlign.center,
             style: AppTextStyles.captionMd,
           ),
@@ -227,20 +227,20 @@ class _LocationSharingRulePanel extends StatelessWidget {
 
   static String _countdownLabel(DateTime target) {
     final diff = target.difference(DateTime.now());
-    if (diff.isNegative || diff.inMinutes < 1) return 'less than a minute';
+    if (diff.isNegative || diff.inMinutes < 1) return 'ไม่ถึงนาที';
 
     final days = diff.inDays;
-    if (days >= 1) return '$days day${days == 1 ? '' : 's'}';
+    if (days >= 1) return '$days วัน';
 
     final hours = diff.inHours;
     if (hours >= 1) {
       final minutes = diff.inMinutes % 60;
-      if (minutes == 0) return '$hours hour${hours == 1 ? '' : 's'}';
-      return '$hours hour${hours == 1 ? '' : 's'} $minutes minute${minutes == 1 ? '' : 's'}';
+      if (minutes == 0) return '$hours ชม.';
+      return '$hours ชม. $minutes นาที';
     }
 
     final minutes = diff.inMinutes;
-    return '$minutes minute${minutes == 1 ? '' : 's'}';
+    return '$minutes นาที';
   }
 }
 
@@ -261,12 +261,12 @@ class _LiveMembersSection extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                'Live · ${meetup.arrivedCount} arrived',
+                'ถ่ายทอดสด · ถึงแล้ว ${meetup.arrivedCount} คน',
                 style: AppTextStyles.titleMd.copyWith(color: BadgeColors.positive),
               ),
               const SizedBox(height: AppSpacing.md),
               PillButton(
-                label: 'View Live Location',
+                label: 'ดูตำแหน่งสด',
                 onPressed: () => context.push('/meetup/${meetup.id}/live'),
               ),
             ],
@@ -292,7 +292,7 @@ class _MembersSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const SectionHeader(title: 'Members'),
+        const SectionHeader(title: 'สมาชิก'),
         const SizedBox(height: AppSpacing.md),
         for (final member in members) ...[
           _MemberRow(member: member, badge: badgeFor(member)),
@@ -336,25 +336,25 @@ class _MemberRow extends StatelessWidget {
 ({String label, Color color}) _arrivalStatusBadge(MeetupMember member) {
   switch (member.arrivalStatus) {
     case MemberArrivalStatus.notLeftYet:
-      return (label: 'Pending', color: BadgeColors.neutral);
+      return (label: 'กำลังเตรียมตัว', color: BadgeColors.neutral);
     case MemberArrivalStatus.onTheWay:
-      return (label: 'On the way', color: BadgeColors.info);
+      return (label: 'กำลังเดินทาง', color: BadgeColors.info);
     case MemberArrivalStatus.arrived:
-      return (label: 'Arrived', color: BadgeColors.positive);
+      return (label: 'ไปถึงแล้ว', color: BadgeColors.positive);
     case MemberArrivalStatus.headingHome:
-      return (label: 'Heading home', color: BadgeColors.neutral);
+      return (label: 'กำลังกลับบ้าน', color: BadgeColors.neutral);
     case MemberArrivalStatus.returned:
-      return (label: 'Returned', color: BadgeColors.neutral);
+      return (label: 'กลับถึงแล้ว', color: BadgeColors.neutral);
   }
 }
 
 ({String label, Color color}) _inviteStatusBadge(MeetupMember member) {
   switch (member.inviteStatus) {
     case MemberInviteStatus.accepted:
-      return (label: 'Accepted', color: BadgeColors.positive);
+      return (label: 'ตอบรับแล้ว', color: BadgeColors.positive);
     case MemberInviteStatus.pending:
-      return (label: 'Pending', color: BadgeColors.neutral);
+      return (label: 'รอตอบรับ', color: BadgeColors.neutral);
     case MemberInviteStatus.declined:
-      return (label: 'Declined', color: BadgeColors.negative);
+      return (label: 'ปฏิเสธแล้ว', color: BadgeColors.negative);
   }
 }

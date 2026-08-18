@@ -7,12 +7,12 @@ class MockBadgesRepository {
     await Future.delayed(const Duration(milliseconds: 200));
     return const [
       ProfileBadge(
-        title: 'Always On Time',
-        description: 'Arrived early or on time 5x in a row',
+        title: 'ตรงเวลาตลอด',
+        description: 'มาถึงก่อนเวลาหรือตรงเวลา 5 ครั้งติดต่อกัน',
       ),
       ProfileBadge(
-        title: 'Reliable',
-        description: 'On time for 80% or more of meetups',
+        title: 'ไว้ใจได้',
+        description: 'ตรงเวลาอย่างน้อย 80% ของตี้ทั้งหมด',
       ),
     ];
   }

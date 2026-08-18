@@ -115,7 +115,7 @@ class _SelectLocationStepState extends State<SelectLocationStep> {
             controller: _searchController,
             style: AppTextStyles.bodyMd,
             decoration: InputDecoration(
-              hintText: 'Search for a place',
+              hintText: 'ค้นหาสถานที่',
               hintStyle: AppTextStyles.bodyMd.copyWith(color: AppColors.textMuted),
               prefixIcon: const Icon(Icons.search, color: AppColors.textMuted),
               border: InputBorder.none,
@@ -147,7 +147,7 @@ class _SelectLocationStepState extends State<SelectLocationStep> {
                 : _results.isEmpty
                 ? Padding(
                     padding: const EdgeInsets.all(AppSpacing.lg),
-                    child: Text('No places found', style: AppTextStyles.captionMd),
+                    child: Text('ไม่พบสถานที่', style: AppTextStyles.captionMd),
                   )
                 : ListView.separated(
                     shrinkWrap: true,
@@ -208,7 +208,7 @@ class _SelectLocationStepState extends State<SelectLocationStep> {
         ],
         const SizedBox(height: AppSpacing.lg),
         PillButton(
-          label: 'Confirm Location',
+          label: 'ยืนยันสถานที่',
           onPressed: _selected == null ? null : _confirm,
         ),
         const SizedBox(height: AppSpacing.lg),

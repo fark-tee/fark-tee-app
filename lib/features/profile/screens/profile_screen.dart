@@ -54,7 +54,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 PillButton(
-                  label: 'Sign Out',
+                  label: 'ออกจากระบบ',
                   destructive: true,
                   onPressed: () {
                     Navigator.of(sheetContext).pop();
@@ -124,17 +124,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: Row(
                 children: [
                   Expanded(
-                    child: _StatColumn(value: user.onTimeCount, label: 'On time'),
+                    child: _StatColumn(value: user.onTimeCount, label: 'ตรงเวลา'),
                   ),
                   Container(width: 0.6, height: 32, color: AppColors.borderSubtle),
                   Expanded(
-                    child: _StatColumn(value: user.lateCount, label: 'Late'),
+                    child: _StatColumn(value: user.lateCount, label: 'สาย'),
                   ),
                 ],
               ),
             ),
             const SizedBox(height: AppSpacing.xxl),
-            const SectionHeader(title: 'Badges'),
+            const SectionHeader(title: 'ป้ายรางวัล'),
             const SizedBox(height: AppSpacing.md),
             if (_badges == null)
               const Center(child: CircularProgressIndicator())
@@ -173,7 +173,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 children: [
                   const Icon(Icons.settings_outlined, color: AppColors.textBody),
                   const SizedBox(width: AppSpacing.md),
-                  Expanded(child: Text('Settings', style: AppTextStyles.titleMd)),
+                  Expanded(child: Text('ตั้งค่า', style: AppTextStyles.titleMd)),
                   const Icon(Icons.chevron_right, color: AppColors.textMuted),
                 ],
               ),

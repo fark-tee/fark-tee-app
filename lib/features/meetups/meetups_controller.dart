@@ -258,15 +258,15 @@ class MeetupsController extends ChangeNotifier {
   /// sharing that silently never started.
   String _tripErrorMessage(
     DioException e, {
-    String fallback = 'Could not update your status. Please try again.',
+    String fallback = 'อัปเดตสถานะไม่สำเร็จ กรุณาลองใหม่อีกครั้ง',
   }) {
     final data = e.response?.data;
     final code = data is Map ? data['code'] as String? : null;
     switch (code) {
       case 'NOT_PARTY_MEMBER':
-        return "You haven't accepted this meetup's invite yet, so your location can't be shared.";
+        return 'คุณยังไม่ได้ตอบรับคำเชิญเข้าร่วมตี้นี้ จึงยังแชร์ตำแหน่งไม่ได้';
       case 'PARTY_NOT_FOUND':
-        return 'This meetup no longer exists.';
+        return 'ตี้นี้ไม่มีอยู่แล้ว';
       default:
         return fallback;
     }
@@ -291,7 +291,7 @@ class MeetupsController extends ChangeNotifier {
     } on DioException catch (e) {
       errorMessage = _tripErrorMessage(
         e,
-        fallback: 'Could not upload your story. Please try again.',
+        fallback: 'อัปโหลดสตอรี่ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง',
       );
       notifyListeners();
       return false;

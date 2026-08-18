@@ -101,7 +101,7 @@ class _InviteFriendsStepState extends State<InviteFriendsStep> {
           child: TextField(
             style: AppTextStyles.bodyMd,
             decoration: InputDecoration(
-              hintText: 'Search by name...',
+              hintText: 'ค้นหาด้วยชื่อ...',
               hintStyle: AppTextStyles.bodyMd.copyWith(color: AppColors.textMuted),
               prefixIcon: const Icon(Icons.search, color: AppColors.textMuted),
               border: InputBorder.none,
@@ -111,12 +111,12 @@ class _InviteFriendsStepState extends State<InviteFriendsStep> {
           ),
         ),
         const SizedBox(height: AppSpacing.md),
-        Text('${selectedIds.length} selected', style: AppTextStyles.captionMd),
+        Text('เลือกแล้ว ${selectedIds.length} คน', style: AppTextStyles.captionMd),
         const SizedBox(height: AppSpacing.sm),
         Expanded(child: _buildResults(selectedIds)),
         const SizedBox(height: AppSpacing.lg),
         PillButton(
-          label: 'Send ${selectedIds.length} Invitations',
+          label: 'ส่งคำเชิญ ${selectedIds.length} คน',
           loading: _submitting,
           onPressed: selectedIds.isEmpty ? null : () => _submit(selectedIds),
         ),
@@ -131,11 +131,11 @@ class _InviteFriendsStepState extends State<InviteFriendsStep> {
     }
     if (_query.trim().isEmpty) {
       return Center(
-        child: Text('Search for people to invite', style: AppTextStyles.captionMd),
+        child: Text('ค้นหาคนที่จะเชิญ', style: AppTextStyles.captionMd),
       );
     }
     if (_results.isEmpty) {
-      return Center(child: Text('No users found', style: AppTextStyles.captionMd));
+      return Center(child: Text('ไม่พบผู้ใช้', style: AppTextStyles.captionMd));
     }
     return ListView.builder(
       itemCount: _results.length,

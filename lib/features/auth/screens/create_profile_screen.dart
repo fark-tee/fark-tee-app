@@ -53,10 +53,10 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
   String? _validateUsername(String? value) {
     final trimmed = value?.trim() ?? '';
     if (trimmed.length < 3 || trimmed.length > 20) {
-      return 'Username must be 3-20 characters';
+      return 'ชื่อผู้ใช้ต้องมี 3-20 ตัวอักษร';
     }
     if (!_usernamePattern.hasMatch(trimmed)) {
-      return 'Only letters, numbers, and underscores';
+      return 'ใช้ได้เฉพาะตัวอักษร ตัวเลข และขีดล่างเท่านั้น';
     }
     return context.read<AuthController>().usernameError;
   }
@@ -147,7 +147,7 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Create your profile')),
+      appBar: AppBar(title: const Text('สร้างโปรไฟล์ของคุณ')),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -182,18 +182,18 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
                 TextFormField(
                   controller: _nameController,
                   decoration: const InputDecoration(
-                    labelText: 'Display name',
+                    labelText: 'ชื่อ',
                     border: OutlineInputBorder(),
                   ),
                   textInputAction: TextInputAction.next,
                   validator: (value) =>
-                      (value?.trim().isEmpty ?? true) ? 'Display name is required' : null,
+                      (value?.trim().isEmpty ?? true) ? 'กรุณากรอกชื่อ' : null,
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _usernameController,
                   decoration: const InputDecoration(
-                    labelText: 'Username',
+                    labelText: 'ชื่อผู้ใช้',
                     prefixText: '@',
                     border: OutlineInputBorder(),
                   ),
@@ -217,7 +217,7 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
                   width: double.infinity,
                   child: FilledButton(
                     onPressed: _saving ? null : _submit,
-                    child: Text(_saving ? 'Saving...' : 'Continue'),
+                    child: Text(_saving ? 'กำลังบันทึก...' : 'ดำเนินการต่อ'),
                   ),
                 ),
               ],
