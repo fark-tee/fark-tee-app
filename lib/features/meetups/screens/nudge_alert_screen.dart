@@ -55,7 +55,10 @@ class _NudgeAlertScreenState extends State<NudgeAlertScreen> {
       // Best-effort - still dismiss even if the player is already stopped.
     }
     if (!mounted) return;
-    Navigator.of(context).maybePop();
+    // canPop is false on the PopScope below, so maybePop() would just be
+    // re-blocked and bounce back into onPopInvokedWithResult -> _dismiss()
+    // again. pop() bypasses that check and actually closes the route.
+    Navigator.of(context).pop();
   }
 
   @override
@@ -75,44 +78,57 @@ class _NudgeAlertScreenState extends State<NudgeAlertScreen> {
       child: Scaffold(
         backgroundColor: AppColors.accentDanger,
         body: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.xxl),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(
-                  Icons.notifications_active,
-                  color: AppColors.textPrimary,
-                  size: 96,
-                ),
-                const SizedBox(height: AppSpacing.xxl),
-                Text(
-                  'รีบมาได้แล้ว\nเพื่อนตามแล้ว!!',
-                  textAlign: TextAlign.center,
-                  style: AppTextStyles.displayLg.copyWith(fontSize: 32, height: 1.3),
-                ),
-                const SizedBox(height: AppSpacing.md),
-                Text(
-                  '${widget.fromDisplayName} กำลังรอคุณอยู่',
-                  textAlign: TextAlign.center,
-                  style: AppTextStyles.bodyMd,
-                ),
-                const SizedBox(height: AppSpacing.xxl * 2),
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton(
-                    onPressed: _dismiss,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.bgSurface,
-                      foregroundColor: AppColors.textPrimary,
-                      padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
-                      shape: const StadiumBorder(),
+          child: Stack(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(AppSpacing.xxl),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.notifications_active,
+                      color: AppColors.textPrimary,
+                      size: 96,
                     ),
-                    child: const Text('โอเค ไปแล้ว!'),
-                  ),
+                    const SizedBox(height: AppSpacing.xxl),
+                    Text(
+                      'รีบมาได้แล้ว\nเพื่อนตามแล้ว!!',
+                      textAlign: TextAlign.center,
+                      style: AppTextStyles.displayLg.copyWith(fontSize: 32, height: 1.3),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    Text(
+                      '${widget.fromDisplayName} กำลังรอคุณอยู่',
+                      textAlign: TextAlign.center,
+                      style: AppTextStyles.bodyMd,
+                    ),
+                    const SizedBox(height: AppSpacing.xxl * 2),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton(
+                        onPressed: _dismiss,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppColors.bgSurface,
+                          foregroundColor: AppColors.textPrimary,
+                          padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
+                          shape: const StadiumBorder(),
+                        ),
+                        child: const Text('โอเค ไปแล้ว!'),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+              Positioned(
+                top: AppSpacing.md,
+                right: AppSpacing.md,
+                child: IconButton(
+                  onPressed: _dismiss,
+                  icon: const Icon(Icons.close, color: AppColors.textPrimary),
+                  tooltip: 'ปิด',
+                ),
+              ),
+            ],
           ),
         ),
       ),
