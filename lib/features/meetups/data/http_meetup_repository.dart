@@ -218,8 +218,7 @@ class HttpMeetupRepository implements MeetupRepository {
 
   @override
   Future<void> sendNudge(String meetupId, String memberId) async {
-    // No backend endpoint exists for this - purely cosmetic, same as mock.
-    await Future.delayed(const Duration(milliseconds: 200));
+    await _apiClient.dio.post<void>('/v1/parties/$meetupId/members/$memberId/nudge');
   }
 
   @override

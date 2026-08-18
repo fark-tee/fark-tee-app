@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "774400406507",
+    "project_id": "fark-tee",
+    "storage_bucket": "fark-tee.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:774400406507:android:1eb2281e921b94e175dfae",
+        "android_client_info": {
+          "package_name": "com.balerion.fark_tee_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD_pHcWJ7oFcrIWjLL0vgUpcTUq_iHCrvg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

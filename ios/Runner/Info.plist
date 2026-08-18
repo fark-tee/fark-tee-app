@@ -62,5 +62,17 @@
 			</array>
 		</dict>
 	</array>
+	<!-- Lets FCM deliver data-only nudge messages (and wake the background
+	     isolate's message handler) while the app isn't in the foreground.
+	     Note: this alone does not give iOS a true full-screen wake for a
+	     regular push when the app is terminated - Apple doesn't allow that
+	     outside VoIP/PushKit, so terminated-state nudges on iOS fall back to
+	     a normal notification + sound, per this feature's design. Actually
+	     enabling the "Push Notifications" capability/entitlement still
+	     requires a human with Xcode + an Apple Developer account. -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
 </dict>
 </plist>
