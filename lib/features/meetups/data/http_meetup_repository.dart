@@ -159,17 +159,24 @@ class HttpMeetupRepository implements MeetupRepository {
   @override
   Future<void> setCurrentUserArrivalStatus(
     String meetupId,
-    MemberArrivalStatus status,
-  ) async {
+    MemberArrivalStatus status, {
+    MeetupLocation? destination,
+  }) async {
     final position = await _locationService.getCurrentPosition();
     switch (status) {
       case MemberArrivalStatus.onTheWay:
+        if (destination == null) {
+          throw ArgumentError.notNull('destination');
+        }
         await _apiClient.dio.post<void>(
           '/v1/parties/$meetupId/trips',
           data: {
             'direction': 'DEPART',
             'lat': position.latitude,
             'lng': position.longitude,
+            'destinationName': destination.name,
+            'destinationLat': destination.position.latitude,
+            'destinationLng': destination.position.longitude,
           },
         );
         await _updateTripStatus(meetupId, 'DEPARTED');
@@ -202,6 +209,9 @@ class HttpMeetupRepository implements MeetupRepository {
         'direction': 'RETURN',
         'lat': position.latitude,
         'lng': position.longitude,
+        'destinationName': destinationLabel,
+        'destinationLat': destinationPosition.latitude,
+        'destinationLng': destinationPosition.longitude,
       },
     );
     await _updateTripStatus(meetupId, 'RETURNING');
@@ -438,6 +448,7 @@ class HttpMeetupRepository implements MeetupRepository {
         isCurrentUser: isCurrentUser,
         reportedPosition: reportedPosition,
         remainingDistanceMeters: distance,
+        estimatedArrivalAt: position?.estimatedArrivalAt,
         profileImageUrl: memberDto.userProfileImage.isEmpty
             ? null
             : memberDto.userProfileImage,

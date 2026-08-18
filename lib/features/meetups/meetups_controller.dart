@@ -202,12 +202,16 @@ class MeetupsController extends ChangeNotifier {
     _liveSubscription = null;
   }
 
-  Future<bool> markCurrentUserLeft(String meetupId) async {
+  Future<bool> markCurrentUserLeft(
+    String meetupId,
+    MeetupLocation destination,
+  ) async {
     errorMessage = null;
     try {
       await _repository.setCurrentUserArrivalStatus(
         meetupId,
         MemberArrivalStatus.onTheWay,
+        destination: destination,
       );
       return true;
     } on DioException catch (e) {

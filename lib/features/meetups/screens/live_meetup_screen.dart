@@ -122,6 +122,22 @@ class _LiveMeetupScreenState extends State<LiveMeetupScreen> {
   }
 }
 
+/// "Arriving in N min" copy for a member currently en route, from the
+/// OSRM-computed [MeetupMember.estimatedArrivalAt]. Null once they've
+/// arrived/returned or haven't started a trip yet.
+String? _etaLabelFor(MeetupMember member) {
+  if (member.arrivalStatus != MemberArrivalStatus.onTheWay &&
+      member.arrivalStatus != MemberArrivalStatus.headingHome) {
+    return null;
+  }
+  final arrivalAt = member.estimatedArrivalAt;
+  if (arrivalAt == null) return null;
+
+  final minutes = arrivalAt.difference(DateTime.now()).inMinutes;
+  if (minutes <= 0) return 'มาถึงอีกไม่นาน';
+  return 'ถึงในอีก $minutes นาที';
+}
+
 /// Runs a [MeetupsController] trip action (start/arrive) and, if it fails,
 /// surfaces `controller.errorMessage` via a snackbar - these calls used to be
 /// fire-and-forget, so a rejected request (e.g. a still-pending invite) left
@@ -441,7 +457,8 @@ class _CurrentUserStatusCard extends StatelessWidget {
             icon: Icons.directions_car,
             onPressed: () => _runTripAction(
               context,
-              (controller) => controller.markCurrentUserLeft(meetup.id),
+              (controller) =>
+                  controller.markCurrentUserLeft(meetup.id, meetup.location),
             ),
           ),
         );
@@ -581,7 +598,18 @@ class _MemberRow extends StatelessWidget {
               children: [
                 Text(member.displayName, style: AppTextStyles.bodyMd),
                 const SizedBox(height: 2),
-                StatusBadge(label: label, color: color),
+                Row(
+                  children: [
+                    StatusBadge(label: label, color: color),
+                    if (_etaLabelFor(member) != null) ...[
+                      const SizedBox(width: AppSpacing.xs),
+                      Text(
+                        _etaLabelFor(member)!,
+                        style: AppTextStyles.captionMd,
+                      ),
+                    ],
+                  ],
+                ),
               ],
             ),
           ),

@@ -18,6 +18,7 @@ class MeetupMember {
     this.remainingDistanceMeters,
     this.reportedPosition,
     this.profileImageUrl,
+    this.estimatedArrivalAt,
   });
 
   final String userId;
@@ -42,6 +43,10 @@ class MeetupMember {
   /// When set, [currentPosition] uses this directly instead of interpolating
   /// between [startPosition] and the venue.
   LatLng? reportedPosition;
+
+  /// OSRM-computed estimated arrival time at this member's trip destination,
+  /// as of their last reported position. Null until they've started a trip.
+  DateTime? estimatedArrivalAt;
 
   /// Interpolates a live map position between [startPosition] and [venue]
   /// based on how much of the walk remains. Falls back to [venue] once

@@ -315,8 +315,9 @@ class MockMeetupRepository implements MeetupRepository {
   @override
   Future<void> setCurrentUserArrivalStatus(
     String meetupId,
-    MemberArrivalStatus status,
-  ) async {
+    MemberArrivalStatus status, {
+    MeetupLocation? destination,
+  }) async {
     await Future.delayed(_networkDelay);
     final meetup = await getMeetup(meetupId);
     meetup.currentUser.arrivalStatus = status;

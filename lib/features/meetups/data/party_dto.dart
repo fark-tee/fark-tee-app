@@ -100,6 +100,8 @@ class PositionDto {
     required this.lat,
     required this.lng,
     required this.recordedAt,
+    required this.estimatedDurationSeconds,
+    required this.estimatedArrivalAt,
   });
 
   factory PositionDto.fromJson(Map<String, dynamic> json) {
@@ -111,6 +113,10 @@ class PositionDto {
       lat: (json['lat'] as num).toDouble(),
       lng: (json['lng'] as num).toDouble(),
       recordedAt: DateTime.parse(json['recordedAt'] as String),
+      estimatedDurationSeconds: json['estimatedDurationSeconds'] as int? ?? 0,
+      estimatedArrivalAt: json['estimatedArrivalAt'] != null
+          ? DateTime.parse(json['estimatedArrivalAt'] as String)
+          : null,
     );
   }
 
@@ -121,4 +127,9 @@ class PositionDto {
   final double lat;
   final double lng;
   final DateTime recordedAt;
+
+  /// OSRM-computed estimated travel time, in seconds, from this position to
+  /// the member's trip destination as of when it was recorded.
+  final int estimatedDurationSeconds;
+  final DateTime? estimatedArrivalAt;
 }

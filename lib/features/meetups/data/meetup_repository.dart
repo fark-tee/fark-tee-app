@@ -40,10 +40,14 @@ abstract class MeetupRepository {
     required List<MeetupMember> members,
   });
 
+  /// [destination] is required when [status] is [MemberArrivalStatus.onTheWay]
+  /// - it's where the current user is heading (the meetup's venue), used to
+  /// start a DEPART trip and compute its estimated travel time.
   Future<void> setCurrentUserArrivalStatus(
     String meetupId,
-    MemberArrivalStatus status,
-  );
+    MemberArrivalStatus status, {
+    MeetupLocation? destination,
+  });
 
   Future<void> goHome(
     String meetupId, {
