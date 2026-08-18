@@ -12,6 +12,8 @@ import '../../features/meetups/screens/going_home_screen.dart';
 import '../../features/meetups/screens/live_meetup_screen.dart';
 import '../../features/meetups/screens/meetup_detail_screen.dart';
 import '../../features/profile/screens/profile_screen.dart';
+import '../../features/saved_locations/screens/add_saved_location_screen.dart';
+import '../../features/saved_locations/screens/saved_locations_screen.dart';
 import 'app_shell.dart';
 
 final rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
@@ -71,6 +73,16 @@ GoRouter buildAppRouter(AuthController authController) {
         path: '/create-meetup',
         parentNavigatorKey: rootNavigatorKey,
         builder: (context, state) => const CreateMeetupScreen(),
+      ),
+      GoRoute(
+        path: '/saved-locations',
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) => const SavedLocationsScreen(),
+      ),
+      GoRoute(
+        path: '/saved-locations/add',
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) => const AddSavedLocationScreen(),
       ),
       GoRoute(
         path: '/meetup/:id',

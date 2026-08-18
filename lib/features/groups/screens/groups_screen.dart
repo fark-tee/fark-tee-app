@@ -75,7 +75,7 @@ class _GroupsScreenState extends State<GroupsScreen> {
                 AppSpacing.lg,
                 AppSpacing.md,
               ),
-              child: Text('Your Groups', style: AppTextStyles.displayLg),
+              child: Text('ตี้ของคุณ', style: AppTextStyles.displayLg),
             ),
             Expanded(
               child: controller.loadingGroups && isEmpty && invites.isEmpty

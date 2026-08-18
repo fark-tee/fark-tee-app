@@ -43,13 +43,6 @@ class MeetupMember {
   /// between [startPosition] and the venue.
   LatLng? reportedPosition;
 
-  int? get etaMinutes {
-    final remaining = remainingDistanceMeters;
-    if (remaining == null) return null;
-    // ~80m/min average walking speed - a mock constant, not measured.
-    return (remaining / 80).ceil().clamp(0, 999);
-  }
-
   /// Interpolates a live map position between [startPosition] and [venue]
   /// based on how much of the walk remains. Falls back to [venue] once
   /// arrived/not tracked, so an arrived member's pin sits on the venue.

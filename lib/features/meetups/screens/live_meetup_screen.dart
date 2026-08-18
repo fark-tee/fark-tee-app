@@ -118,9 +118,6 @@ class _LiveMeetupScreenState extends State<LiveMeetupScreen> {
 
   String? _captionFor(MeetupMember member) {
     if (member.isCurrentUser) return null;
-    if (member.arrivalStatus == MemberArrivalStatus.onTheWay) {
-      return '${member.displayName.split(' ').first}\n${member.etaMinutes} min';
-    }
     return member.displayName.split(' ').first;
   }
 }
@@ -583,19 +580,7 @@ class _MemberRow extends StatelessWidget {
               children: [
                 Text(member.displayName, style: AppTextStyles.bodyMd),
                 const SizedBox(height: 2),
-                Row(
-                  children: [
-                    StatusBadge(label: label, color: color),
-                    if (member.arrivalStatus ==
-                        MemberArrivalStatus.onTheWay) ...[
-                      const SizedBox(width: AppSpacing.sm),
-                      Text(
-                        '${member.etaMinutes} min',
-                        style: AppTextStyles.captionMd,
-                      ),
-                    ],
-                  ],
-                ),
+                StatusBadge(label: label, color: color),
               ],
             ),
           ),

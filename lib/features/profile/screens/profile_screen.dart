@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/theme/app_colors.dart';
@@ -152,6 +153,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 const SizedBox(height: AppSpacing.sm),
               ],
             const SizedBox(height: AppSpacing.md),
+            AppCard(
+              onTap: () => context.push('/saved-locations'),
+              child: Row(
+                children: [
+                  const Icon(Icons.location_on_outlined, color: AppColors.textBody),
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: Text('สถานที่บันทึกไว้', style: AppTextStyles.titleMd),
+                  ),
+                  const Icon(Icons.chevron_right, color: AppColors.textMuted),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
             AppCard(
               onTap: _showSignOutSheet,
               child: Row(

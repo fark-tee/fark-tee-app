@@ -21,6 +21,7 @@ import 'features/meetups/data/http_meetup_repository.dart';
 import 'features/meetups/data/meetup_repository.dart';
 import 'features/meetups/meetups_controller.dart';
 import 'features/profile/data/mock_badges_repository.dart';
+import 'features/saved_locations/data/saved_locations_repository.dart';
 import 'firebase_options.dart';
 
 /// Runs in a separate background isolate when a data-only FCM message
@@ -99,6 +100,7 @@ void main() async {
   );
   final PlacesRepository placesRepository = NominatimPlacesRepository();
   final locationService = LocationService();
+  final savedLocationsRepository = SavedLocationsRepository(apiClient);
 
   // Everything below is best-effort and gated on `firebaseAvailable`: with
   // only placeholder Firebase config in place (see lib/firebase_options.dart),
@@ -140,6 +142,7 @@ void main() async {
         Provider.value(value: MockBadgesRepository()),
         Provider.value(value: placesRepository),
         Provider.value(value: locationService),
+        Provider.value(value: savedLocationsRepository),
       ],
       child: const App(),
     ),

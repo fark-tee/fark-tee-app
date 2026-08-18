@@ -6,36 +6,15 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/app_card.dart';
-import '../../../core/widgets/map/lat_lng.dart';
 import '../../../core/widgets/pill_button.dart';
+import '../../saved_locations/data/saved_locations_repository.dart';
+import '../../saved_locations/models/saved_location.dart';
 import '../meetups_controller.dart';
 
-class _SavedDestination {
-  const _SavedDestination(this.name, this.address, this.position);
-
-  final String name;
-  final String address;
-  final LatLng position;
-}
-
-/// Mock saved locations shown inline per the spec's own example content -
-/// no separate "choose destination" screen.
-const _savedDestinations = [
-  _SavedDestination(
-    'Home (Default)',
-    'Ratchada 7, Ratchada, Bangkok',
-    LatLng(13.7649, 100.5383),
-  ),
-  _SavedDestination(
-    'Condo',
-    'Ratchada 7, Ratchada, Bangkok',
-    LatLng(13.7649, 100.5383),
-  ),
-];
-
 /// Lets the current user announce they're heading home from a meetup,
-/// picking one of a couple of saved destinations, then reports the status
-/// change via `MeetupsController.goHome` and clears the meetup stack.
+/// picking one of their saved locations (GET /v1/saved-locations), then
+/// reports the status change via `MeetupsController.goHome` and clears the
+/// meetup stack.
 class GoingHomeScreen extends StatefulWidget {
   const GoingHomeScreen({super.key, required this.meetupId});
 
@@ -46,17 +25,47 @@ class GoingHomeScreen extends StatefulWidget {
 }
 
 class _GoingHomeScreenState extends State<GoingHomeScreen> {
-  bool _loading = false;
-  String _selectedDestination = _savedDestinations.first.name;
+  bool _loadingDestinations = true;
+  String? _loadError;
+  List<SavedLocation> _destinations = [];
+  String? _selectedId;
+
+  bool _confirming = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDestinations();
+  }
+
+  Future<void> _loadDestinations() async {
+    setState(() {
+      _loadingDestinations = true;
+      _loadError = null;
+    });
+    try {
+      final destinations = await context.read<SavedLocationsRepository>().list();
+      if (!mounted) return;
+      setState(() {
+        _destinations = destinations;
+        _selectedId = destinations.isEmpty ? null : destinations.first.id;
+        _loadingDestinations = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _loadError = 'โหลดสถานที่บันทึกไว้ไม่สำเร็จ กรุณาลองใหม่';
+        _loadingDestinations = false;
+      });
+    }
+  }
 
   Future<void> _confirmGoingHome() async {
-    setState(() => _loading = true);
+    final destination = _destinations.firstWhere((d) => d.id == _selectedId);
+    setState(() => _confirming = true);
 
     final controller = context.read<MeetupsController>();
     final messenger = ScaffoldMessenger.of(context);
-    final destination = _savedDestinations.firstWhere(
-      (d) => d.name == _selectedDestination,
-    );
     final succeeded = await controller.goHome(
       widget.meetupId,
       destinationLabel: destination.name,
@@ -64,7 +73,7 @@ class _GoingHomeScreenState extends State<GoingHomeScreen> {
     );
 
     if (!mounted) return;
-    setState(() => _loading = false);
+    setState(() => _confirming = false);
 
     if (!succeeded) {
       if (controller.errorMessage != null) {
@@ -85,36 +94,74 @@ class _GoingHomeScreenState extends State<GoingHomeScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Heading home?', style: AppTextStyles.displayLg),
+              Text('กำลังจะกลับบ้านหรือ?', style: AppTextStyles.displayLg),
               const SizedBox(height: AppSpacing.xs),
               Text(
-                "Let your friends know you're on your way home",
-                style: AppTextStyles.bodyMd.copyWith(
-                  color: AppColors.textMuted,
-                ),
+                'บอกให้เพื่อนๆรู้ว่าคุณกำลังเดินทางกลับบ้าน',
+                style: AppTextStyles.bodyMd.copyWith(color: AppColors.textMuted),
               ),
               const SizedBox(height: AppSpacing.xxl),
-              Text('Choose a new destination', style: AppTextStyles.titleMd),
+              Text('เลือกปลายทาง', style: AppTextStyles.titleMd),
               const SizedBox(height: AppSpacing.md),
-              for (final destination in _savedDestinations) ...[
-                _DestinationCard(
-                  destination: destination,
-                  selected: destination.name == _selectedDestination,
-                  onTap: () =>
-                      setState(() => _selectedDestination = destination.name),
-                ),
-                const SizedBox(height: AppSpacing.sm),
-              ],
-              const Spacer(),
+              Expanded(child: _buildDestinationList()),
+              const SizedBox(height: AppSpacing.md),
+              PillOutlineButton(label: 'ยกเลิก', onPressed: () => context.pop()),
+              const SizedBox(height: AppSpacing.sm),
               PillButton(
-                label: 'Confirm Going Home',
-                loading: _loading,
-                onPressed: _confirmGoingHome,
+                label: 'ยืนยันกลับบ้าน',
+                loading: _confirming,
+                onPressed: _selectedId == null ? null : _confirmGoingHome,
               ),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildDestinationList() {
+    if (_loadingDestinations) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_loadError != null) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              _loadError!,
+              style: AppTextStyles.bodyMd.copyWith(color: AppColors.textMuted),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppSpacing.md),
+            PillOutlineButton(label: 'ลองใหม่', onPressed: _loadDestinations),
+          ],
+        ),
+      );
+    }
+
+    if (_destinations.isEmpty) {
+      return Center(
+        child: Text(
+          'ยังไม่มีสถานที่บันทึกไว้ กรุณาเพิ่มสถานที่ในหน้าโปรไฟล์ก่อน',
+          style: AppTextStyles.bodyMd.copyWith(color: AppColors.textMuted),
+          textAlign: TextAlign.center,
+        ),
+      );
+    }
+
+    return ListView(
+      children: [
+        for (final destination in _destinations) ...[
+          _DestinationCard(
+            destination: destination,
+            selected: destination.id == _selectedId,
+            onTap: () => setState(() => _selectedId = destination.id),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+        ],
+      ],
     );
   }
 }
@@ -126,7 +173,7 @@ class _DestinationCard extends StatelessWidget {
     required this.onTap,
   });
 
-  final _SavedDestination destination;
+  final SavedLocation destination;
   final bool selected;
   final VoidCallback onTap;
 
@@ -137,19 +184,12 @@ class _DestinationCard extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  destination.name,
-                  style: AppTextStyles.bodyMd.copyWith(
-                    color: AppColors.textPrimary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.xs),
-                Text(destination.address, style: AppTextStyles.captionMd),
-              ],
+            child: Text(
+              destination.name,
+              style: AppTextStyles.bodyMd.copyWith(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
           if (selected)
