@@ -67,7 +67,8 @@ class _LiveMeetupScreenState extends State<LiveMeetupScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final meetup = context.watch<MeetupsController>().selectedMeetup;
+    final controller = context.watch<MeetupsController>();
+    final meetup = controller.selectedMeetup;
 
     if (meetup == null) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
@@ -111,6 +112,7 @@ class _LiveMeetupScreenState extends State<LiveMeetupScreen> {
             sheetController: _sheetController,
             meetupId: meetup.id,
           ),
+          if (controller.updatingArrivalStatus) const _TravelCalculatingOverlay(),
         ],
       ),
     );
@@ -401,6 +403,34 @@ class _StoryCameraOverlay extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+/// Full-screen scrim shown while [MeetupsController.markCurrentUserLeft] is
+/// awaiting the backend's OSRM route calculation for the just-started trip.
+class _TravelCalculatingOverlay extends StatelessWidget {
+  const _TravelCalculatingOverlay();
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned.fill(
+      child: ColoredBox(
+        color: AppColors.bgBase.withValues(alpha: 0.6),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const CircularProgressIndicator(color: AppColors.accentDanger),
+              const SizedBox(height: AppSpacing.md),
+              Text(
+                'รอสักครู่กำลังคำนวณการเดินทาง',
+                style: AppTextStyles.bodyMd.copyWith(color: AppColors.textPrimary),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

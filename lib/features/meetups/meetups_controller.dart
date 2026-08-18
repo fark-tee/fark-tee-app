@@ -51,6 +51,10 @@ class MeetupsController extends ChangeNotifier {
   /// which read as positions/trips mysteriously never showing up.
   String? errorMessage;
 
+  /// True while [markCurrentUserLeft] is awaiting the backend's OSRM route
+  /// calculation, so the screen can show a "calculating travel" loading state.
+  bool updatingArrivalStatus = false;
+
   final Map<String, DateTime> _nudgeCooldownUntil = {};
   static const nudgeCooldown = Duration(seconds: 45);
 
@@ -207,6 +211,8 @@ class MeetupsController extends ChangeNotifier {
     MeetupLocation destination,
   ) async {
     errorMessage = null;
+    updatingArrivalStatus = true;
+    notifyListeners();
     try {
       await _repository.setCurrentUserArrivalStatus(
         meetupId,
@@ -216,8 +222,10 @@ class MeetupsController extends ChangeNotifier {
       return true;
     } on DioException catch (e) {
       errorMessage = _tripErrorMessage(e);
-      notifyListeners();
       return false;
+    } finally {
+      updatingArrivalStatus = false;
+      notifyListeners();
     }
   }
 
