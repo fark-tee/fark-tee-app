@@ -117,7 +117,10 @@ class _NavItem extends StatelessWidget {
             const SizedBox(height: 2),
             Text(
               label,
-              style: AppTextStyles.microSm.copyWith(color: AppColors.textPrimary),
+              style: AppTextStyles.microSm.copyWith(
+                fontSize: 12,
+                color: AppColors.textPrimary,
+              ),
             ),
           ],
         ),

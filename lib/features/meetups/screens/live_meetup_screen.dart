@@ -656,7 +656,7 @@ class _NudgeButton extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 6),
-            Text(isOnCooldown ? 'Nudged' : 'ฝากที'),
+            Text(isOnCooldown ? 'โดนละ' : 'ฝากที'),
           ],
         ),
       ),

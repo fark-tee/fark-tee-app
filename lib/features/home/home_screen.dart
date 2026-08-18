@@ -267,10 +267,13 @@ class _SearchBar extends StatelessWidget {
               controller: controller,
               onChanged: onChanged,
               style: AppTextStyles.bodyMd,
+              cursorColor: AppColors.textMuted,
               decoration: InputDecoration(
                 isDense: true,
                 border: InputBorder.none,
-                hintText: 'Find a location...',
+                filled: true,
+                fillColor: AppColors.bgElevated,
+                hintText: 'ค้นหาที่ตี้',
                 hintStyle: AppTextStyles.bodyMd.copyWith(color: AppColors.textMuted),
               ),
             ),
@@ -361,7 +364,7 @@ class _CreateMeetupButton extends StatelessWidget {
       child: FilledButton.icon(
         onPressed: onTap,
         icon: const Icon(Icons.add, size: 18),
-        label: const Text('Create Meetup'),
+        label: const Text('สร้างตี้'),
         style: FilledButton.styleFrom(
           backgroundColor: AppColors.bgElevated,
           foregroundColor: AppColors.textPrimary,
@@ -403,8 +406,8 @@ class _ActiveGroupsCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Active Groups', style: AppTextStyles.titleMd),
-              Text('$activeCount active', style: AppTextStyles.captionMd),
+              Text('ตี้ที่กำลังคึกคัก', style: AppTextStyles.titleMd),
+              Text('$activeCount ตี้', style: AppTextStyles.captionMd),
             ],
           ),
           const SizedBox(height: AppSpacing.md),

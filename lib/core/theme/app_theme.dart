@@ -12,7 +12,7 @@ class AppTheme {
 
   static ThemeData get dark {
     final base = ThemeData(brightness: Brightness.dark, useMaterial3: true);
-    final textTheme = GoogleFonts.dmSansTextTheme(base.textTheme).apply(
+    final textTheme = GoogleFonts.promptTextTheme(base.textTheme).apply(
       bodyColor: AppColors.textBody,
       displayColor: AppColors.textPrimary,
     );
