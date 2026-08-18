@@ -1,5 +1,8 @@
+import 'dart:io';
+
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
@@ -26,6 +29,15 @@ class NudgeAlertScreen extends StatefulWidget {
 }
 
 class _NudgeAlertScreenState extends State<NudgeAlertScreen> {
+  // Mirrors MainActivity.kt's LOCK_SCREEN_CHANNEL - clears the
+  // show-when-locked/turn-screen-on flags that were set (Android only) so
+  // this alert could wake a locked device like an incoming call. Without
+  // this, whatever screen is underneath would stay drawn over a still-locked
+  // device after the alert is dismissed.
+  static const _lockScreenChannel = MethodChannel(
+    'com.balerion.fark_tee_app/nudge_lock_screen',
+  );
+
   final _player = AudioPlayer();
 
   @override
@@ -53,6 +65,13 @@ class _NudgeAlertScreenState extends State<NudgeAlertScreen> {
       await _player.stop();
     } catch (_) {
       // Best-effort - still dismiss even if the player is already stopped.
+    }
+    if (Platform.isAndroid) {
+      try {
+        await _lockScreenChannel.invokeMethod<void>('clearShowWhenLocked');
+      } catch (e) {
+        debugPrint('[nudge] failed to clear show-when-locked flags: $e');
+      }
     }
     if (!mounted) return;
     // canPop is false on the PopScope below, so maybePop() would just be

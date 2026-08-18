@@ -82,6 +82,13 @@ class NudgeNotificationService {
       // Android 13+ (API 33) requires this explicit runtime request for
       // POST_NOTIFICATIONS - a no-op on older Android versions.
       await androidPlugin?.requestNotificationsPermission();
+      // Android 14+ (API 34) gates fullScreenIntent notifications behind
+      // this special-access toggle - without it granted, the notification
+      // silently degrades to a normal heads-up banner instead of waking a
+      // locked screen like an incoming call. There's no runtime dialog for
+      // this like POST_NOTIFICATIONS; the plugin opens system Settings for
+      // the user to grant it manually.
+      await androidPlugin?.requestFullScreenIntentPermission();
 
       final iosPlugin = plugin
           .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>();
