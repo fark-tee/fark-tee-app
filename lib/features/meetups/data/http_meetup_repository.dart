@@ -16,17 +16,10 @@ import 'meetup_repository.dart';
 import 'party_dto.dart';
 
 /// Real backend-backed [MeetupRepository]. Maps the backend's Party/Trip/
-/// Position model onto this app's `Meetup`/`MeetupMember` view models.
-///
-/// Known limitations, given what the backend currently exposes:
-/// - There's no server-side "arrived" concept - it's derived here from the
-///   distance between a member's last reported position and the party's
-///   destination (see [_arrivalRadiusMeters]).
-/// - The backend doesn't record trip *direction* on the positions list, so a
-///   member walking home looks identical to one walking to the venue. Only
-///   the current device's own "heading home" state (set via [goHome]) is
-///   tracked, and only locally - other members will never show as
-///   `headingHome` on this device.
+/// Position/PartyMember model onto this app's `Meetup`/`MeetupMember` view
+/// models. Arrival state is the party member's server-side `tripStatus`
+/// (`PENDING_DEPARTURE` -> `DEPARTED` -> `ARRIVED` -> `RETURNING` ->
+/// `RETURNED`), so it's consistent for every member on every device.
 class HttpMeetupRepository implements MeetupRepository {
   HttpMeetupRepository({
     required ApiClient apiClient,
@@ -39,14 +32,18 @@ class HttpMeetupRepository implements MeetupRepository {
 
   String? _currentUserId;
 
-  /// Meetups where this device has started a depart trip but not yet
-  /// confirmed arrival - while true, [watchMeetup] reports a fresh GPS
-  /// position on every poll tick.
-  final Set<String> _activeTripMeetupIds = {};
+  /// Meetups where this device has started a depart trip but hasn't yet
+  /// reached the venue - while a meetupId is present, [watchMeetup] reports
+  /// a fresh GPS position on every poll tick, and once that position is
+  /// within [_arrivalRadiusMeters] of the venue, [_pushUpdate] stops sending
+  /// updates and advances the trip status to ARRIVED automatically.
+  final Set<String> _activeDepartMeetupIds = {};
 
-  /// Meetups where this device has tapped "Go Home" - purely a local display
-  /// hint, see the class doc comment.
-  final Set<String> _headingHomeMeetupIds = {};
+  /// Meetups where this device has started a return trip but hasn't yet
+  /// reached home - same auto-stop/auto-advance behavior as
+  /// [_activeDepartMeetupIds], except the target is the chosen destination
+  /// (there's no venue to walk back to) and the terminal status is RETURNED.
+  final Map<String, LatLng> _activeReturnTargets = {};
 
   final Map<String, StreamController<Meetup>> _liveControllers = {};
   final Map<String, Timer> _liveTimers = {};
@@ -159,22 +156,29 @@ class HttpMeetupRepository implements MeetupRepository {
             'lng': position.longitude,
           },
         );
-        _activeTripMeetupIds.add(meetupId);
+        await _updateTripStatus(meetupId, 'DEPARTED');
+        _activeDepartMeetupIds.add(meetupId);
       case MemberArrivalStatus.arrived:
         await _apiClient.dio.post<void>(
           '/v1/parties/$meetupId/positions',
           data: {'lat': position.latitude, 'lng': position.longitude},
         );
-        _activeTripMeetupIds.remove(meetupId);
+        await _updateTripStatus(meetupId, 'ARRIVED');
+        _activeDepartMeetupIds.remove(meetupId);
       case MemberArrivalStatus.notLeftYet:
       case MemberArrivalStatus.headingHome:
+      case MemberArrivalStatus.returned:
         break;
     }
     await _pushUpdate(meetupId);
   }
 
   @override
-  Future<void> goHome(String meetupId, {required String destinationLabel}) async {
+  Future<void> goHome(
+    String meetupId, {
+    required String destinationLabel,
+    required LatLng destinationPosition,
+  }) async {
     final position = await _locationService.getCurrentPosition();
     await _apiClient.dio.post<void>(
       '/v1/parties/$meetupId/trips',
@@ -184,8 +188,16 @@ class HttpMeetupRepository implements MeetupRepository {
         'lng': position.longitude,
       },
     );
-    _activeTripMeetupIds.remove(meetupId);
-    _headingHomeMeetupIds.add(meetupId);
+    await _updateTripStatus(meetupId, 'RETURNING');
+    _activeDepartMeetupIds.remove(meetupId);
+    _activeReturnTargets[meetupId] = destinationPosition;
+  }
+
+  Future<void> _updateTripStatus(String meetupId, String status) {
+    return _apiClient.dio.patch<void>(
+      '/v1/parties/$meetupId/trip-status',
+      data: {'status': status},
+    );
   }
 
   @override
@@ -263,12 +275,16 @@ class HttpMeetupRepository implements MeetupRepository {
     final controller = _liveControllers[meetupId];
     if (controller == null || controller.isClosed) return;
 
-    if (_activeTripMeetupIds.contains(meetupId)) {
+    final isDeparting = _activeDepartMeetupIds.contains(meetupId);
+    final returnTarget = _activeReturnTargets[meetupId];
+
+    LatLng? currentPosition;
+    if (isDeparting || returnTarget != null) {
       try {
-        final position = await _locationService.getCurrentPosition();
+        currentPosition = await _locationService.getCurrentPosition();
         await _apiClient.dio.post<void>(
           '/v1/parties/$meetupId/positions',
-          data: {'lat': position.latitude, 'lng': position.longitude},
+          data: {'lat': currentPosition.latitude, 'lng': currentPosition.longitude},
         );
       } catch (_) {
         // A transient GPS/network hiccup shouldn't stop everyone else's
@@ -276,12 +292,33 @@ class HttpMeetupRepository implements MeetupRepository {
       }
     }
 
+    Meetup meetup;
     try {
-      final meetup = await getMeetup(meetupId);
-      if (!controller.isClosed) controller.add(meetup);
+      meetup = await getMeetup(meetupId);
     } catch (_) {
       // Swallow - the next tick will retry.
+      return;
     }
+
+    // Once within arrival range of the leg's target, stop sending this
+    // device's location and advance the trip status - the next tick then
+    // finds neither an active depart nor return target and goes quiet.
+    if (currentPosition != null) {
+      if (isDeparting &&
+          _distanceMeters(currentPosition, meetup.location.position) <=
+              _arrivalRadiusMeters) {
+        _activeDepartMeetupIds.remove(meetupId);
+        await _updateTripStatus(meetupId, 'ARRIVED');
+        meetup.currentUser.arrivalStatus = MemberArrivalStatus.arrived;
+      } else if (returnTarget != null &&
+          _distanceMeters(currentPosition, returnTarget) <= _arrivalRadiusMeters) {
+        _activeReturnTargets.remove(meetupId);
+        await _updateTripStatus(meetupId, 'RETURNED');
+        meetup.currentUser.arrivalStatus = MemberArrivalStatus.returned;
+      }
+    }
+
+    if (!controller.isClosed) controller.add(meetup);
   }
 
   Future<List<PartyDto>> _fetchMyParties() async {
@@ -319,17 +356,6 @@ class HttpMeetupRepository implements MeetupRepository {
           ? null
           : _distanceMeters(reportedPosition, destination);
 
-      MemberArrivalStatus arrivalStatus;
-      if (distance == null) {
-        arrivalStatus = MemberArrivalStatus.notLeftYet;
-      } else if (distance <= _arrivalRadiusMeters) {
-        arrivalStatus = MemberArrivalStatus.arrived;
-      } else if (isCurrentUser && _headingHomeMeetupIds.contains(party.id)) {
-        arrivalStatus = MemberArrivalStatus.headingHome;
-      } else {
-        arrivalStatus = MemberArrivalStatus.onTheWay;
-      }
-
       return MeetupMember(
         userId: memberDto.userId,
         displayName: memberDto.userDisplayName,
@@ -338,7 +364,7 @@ class HttpMeetupRepository implements MeetupRepository {
         inviteStatus: memberDto.status == 'ACCEPTED'
             ? MemberInviteStatus.accepted
             : MemberInviteStatus.pending,
-        arrivalStatus: arrivalStatus,
+        arrivalStatus: _arrivalStatusFrom(memberDto.tripStatus),
         isCurrentUser: isCurrentUser,
         reportedPosition: reportedPosition,
         remainingDistanceMeters: distance,
@@ -371,6 +397,22 @@ class HttpMeetupRepository implements MeetupRepository {
   }
 
   bool _isPast(DateTime targetTime) => DateTime.now().isAfter(targetTime.add(_pastAfter));
+}
+
+MemberArrivalStatus _arrivalStatusFrom(String tripStatus) {
+  switch (tripStatus) {
+    case 'DEPARTED':
+      return MemberArrivalStatus.onTheWay;
+    case 'ARRIVED':
+      return MemberArrivalStatus.arrived;
+    case 'RETURNING':
+      return MemberArrivalStatus.headingHome;
+    case 'RETURNED':
+      return MemberArrivalStatus.returned;
+    case 'PENDING_DEPARTURE':
+    default:
+      return MemberArrivalStatus.notLeftYet;
+  }
 }
 
 double _distanceMeters(LatLng a, LatLng b) {

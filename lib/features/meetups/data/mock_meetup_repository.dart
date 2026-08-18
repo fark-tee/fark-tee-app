@@ -319,7 +319,11 @@ class MockMeetupRepository implements MeetupRepository {
   }
 
   @override
-  Future<void> goHome(String meetupId, {required String destinationLabel}) async {
+  Future<void> goHome(
+    String meetupId, {
+    required String destinationLabel,
+    required LatLng destinationPosition,
+  }) async {
     await Future.delayed(_networkDelay);
     final meetup = await getMeetup(meetupId);
     meetup.currentUser.arrivalStatus = MemberArrivalStatus.headingHome;

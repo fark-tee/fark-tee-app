@@ -6,21 +6,31 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/app_card.dart';
+import '../../../core/widgets/map/lat_lng.dart';
 import '../../../core/widgets/pill_button.dart';
 import '../meetups_controller.dart';
 
 class _SavedDestination {
-  const _SavedDestination(this.name, this.address);
+  const _SavedDestination(this.name, this.address, this.position);
 
   final String name;
   final String address;
+  final LatLng position;
 }
 
 /// Mock saved locations shown inline per the spec's own example content -
 /// no separate "choose destination" screen.
 const _savedDestinations = [
-  _SavedDestination('Home (Default)', 'Ratchada 7, Ratchada, Bangkok'),
-  _SavedDestination('Condo', 'Ratchada 7, Ratchada, Bangkok'),
+  _SavedDestination(
+    'Home (Default)',
+    'Ratchada 7, Ratchada, Bangkok',
+    LatLng(13.7649, 100.5383),
+  ),
+  _SavedDestination(
+    'Condo',
+    'Ratchada 7, Ratchada, Bangkok',
+    LatLng(13.7649, 100.5383),
+  ),
 ];
 
 /// Lets the current user announce they're heading home from a meetup,
@@ -44,9 +54,13 @@ class _GoingHomeScreenState extends State<GoingHomeScreen> {
 
     final controller = context.read<MeetupsController>();
     final messenger = ScaffoldMessenger.of(context);
+    final destination = _savedDestinations.firstWhere(
+      (d) => d.name == _selectedDestination,
+    );
     final succeeded = await controller.goHome(
       widget.meetupId,
-      destinationLabel: _selectedDestination,
+      destinationLabel: destination.name,
+      destinationPosition: destination.position,
     );
 
     if (!mounted) return;

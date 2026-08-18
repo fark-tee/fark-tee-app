@@ -1,4 +1,5 @@
 import '../../../core/auth/auth_models.dart';
+import '../../../core/widgets/map/lat_lng.dart';
 import '../models/grouped_meetups.dart';
 import '../models/meetup.dart';
 import '../models/meetup_enums.dart';
@@ -41,7 +42,11 @@ abstract class MeetupRepository {
     MemberArrivalStatus status,
   );
 
-  Future<void> goHome(String meetupId, {required String destinationLabel});
+  Future<void> goHome(
+    String meetupId, {
+    required String destinationLabel,
+    required LatLng destinationPosition,
+  });
 
   /// Purely social - never mutates the target member's real status.
   Future<void> sendNudge(String meetupId, String memberId);

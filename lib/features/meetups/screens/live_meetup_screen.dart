@@ -338,6 +338,11 @@ class _CurrentUserStatusCard extends StatelessWidget {
           headline: 'กำลังเดินทางกลับบ้าน',
           imagePath: 'assets/images/mascots/walking.png',
         );
+      case MemberArrivalStatus.returned:
+        return const _StatusCard(
+          headline: 'กลับถึงบ้านแล้ว',
+          imagePath: 'assets/images/mascots/all_arrived.png',
+        );
     }
   }
 }
@@ -429,10 +434,11 @@ class _MemberRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (label, color) = switch (member.arrivalStatus) {
-      MemberArrivalStatus.notLeftYet => ('Pending', BadgeColors.neutral),
-      MemberArrivalStatus.onTheWay => ('On the way', BadgeColors.info),
-      MemberArrivalStatus.arrived => ('Arrived', BadgeColors.positive),
-      MemberArrivalStatus.headingHome => ('Heading home', BadgeColors.neutral),
+      MemberArrivalStatus.notLeftYet => ('กำลังเตรียมตัว', BadgeColors.neutral),
+      MemberArrivalStatus.onTheWay => ('กำลังเดินทาง', BadgeColors.info),
+      MemberArrivalStatus.arrived => ('ไปถึงแล้ว', BadgeColors.positive),
+      MemberArrivalStatus.headingHome => ('กำลังกลับบ้าน', BadgeColors.neutral),
+      MemberArrivalStatus.returned => ('กลับถึงแล้ว', BadgeColors.neutral),
     };
 
     final isOnCooldown = context.watch<MeetupsController>().isNudgeOnCooldown(
@@ -470,7 +476,8 @@ class _MemberRow extends StatelessWidget {
               ],
             ),
           ),
-          if (member.arrivalStatus != MemberArrivalStatus.arrived) ...[
+          if (member.arrivalStatus != MemberArrivalStatus.arrived &&
+              member.arrivalStatus != MemberArrivalStatus.returned) ...[
             const SizedBox(width: AppSpacing.sm),
             SizedBox(
               width: 84,

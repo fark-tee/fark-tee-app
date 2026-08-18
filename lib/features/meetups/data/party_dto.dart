@@ -45,6 +45,7 @@ class PartyMemberDto {
     required this.userDisplayName,
     required this.userProfileImage,
     required this.status,
+    required this.tripStatus,
   });
 
   factory PartyMemberDto.fromJson(Map<String, dynamic> json) {
@@ -55,6 +56,7 @@ class PartyMemberDto {
       userDisplayName: json['userDisplayName'] as String,
       userProfileImage: json['userProfileImage'] as String? ?? '',
       status: json['status'] as String,
+      tripStatus: json['tripStatus'] as String? ?? 'PENDING_DEPARTURE',
     );
   }
 
@@ -66,6 +68,11 @@ class PartyMemberDto {
 
   /// Raw backend status string: "PENDING" or "ACCEPTED".
   final String status;
+
+  /// Raw backend trip status string: "PENDING_DEPARTURE", "DEPARTED",
+  /// "ARRIVED", "RETURNING", or "RETURNED". Only ever moves forward through
+  /// that sequence.
+  final String tripStatus;
 }
 
 /// Mirrors the backend's `PartyInviteResponse`: a pending party membership

@@ -230,10 +230,18 @@ class MeetupsController extends ChangeNotifier {
     }
   }
 
-  Future<bool> goHome(String meetupId, {required String destinationLabel}) async {
+  Future<bool> goHome(
+    String meetupId, {
+    required String destinationLabel,
+    required LatLng destinationPosition,
+  }) async {
     errorMessage = null;
     try {
-      await _repository.goHome(meetupId, destinationLabel: destinationLabel);
+      await _repository.goHome(
+        meetupId,
+        destinationLabel: destinationLabel,
+        destinationPosition: destinationPosition,
+      );
       return true;
     } on DioException catch (e) {
       errorMessage = _tripErrorMessage(e);

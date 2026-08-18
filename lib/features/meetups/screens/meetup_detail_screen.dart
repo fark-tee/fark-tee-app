@@ -346,6 +346,8 @@ class _MemberRow extends StatelessWidget {
       return (label: 'Arrived', color: BadgeColors.positive);
     case MemberArrivalStatus.headingHome:
       return (label: 'Heading home', color: BadgeColors.neutral);
+    case MemberArrivalStatus.returned:
+      return (label: 'Returned', color: BadgeColors.neutral);
   }
 }
 
