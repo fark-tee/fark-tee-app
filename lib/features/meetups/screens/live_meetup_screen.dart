@@ -291,14 +291,13 @@ class _CurrentUserStatusCard extends StatelessWidget {
     );
 
     if (everyoneArrived) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          PillButton(
-            label: 'Go Home',
-            onPressed: () => context.push('/meetup/${meetup.id}/going-home'),
-          ),
-        ],
+      return _StatusCard(
+        headline: 'ทุกคนถึงครบแล้ว',
+        imagePath: 'assets/images/mascots/all_arrived.png',
+        action: _StatusActionPill(
+          label: 'แยกย้ายกลับ',
+          onPressed: () => context.push('/meetup/${meetup.id}/going-home'),
+        ),
       );
     }
 
@@ -306,60 +305,118 @@ class _CurrentUserStatusCard extends StatelessWidget {
 
     switch (currentUser.arrivalStatus) {
       case MemberArrivalStatus.arrived:
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Want to help greet your friends?',
-              style: AppTextStyles.bodyMd,
-            ),
-            const SizedBox(height: AppSpacing.md),
-            const PillButton(label: '✓ You have arrived', onPressed: null),
-          ],
+        return const _StatusCard(
+          headline: 'ฝากทีไปตามเพื่อนดีกว่า',
+          imagePath: 'assets/images/mascots/waiting.png',
         );
       case MemberArrivalStatus.onTheWay:
         final aFriendArrived = meetup.otherMembers.any(
           (m) => m.arrivalStatus == MemberArrivalStatus.arrived,
         );
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              aFriendArrived
-                  ? 'Your friend has arrived, you should hurry'
-                  : 'On the way',
-              style: AppTextStyles.bodyMd,
-            ),
-            const SizedBox(height: AppSpacing.md),
-            PillButton(
-              label: "I've Arrived",
-              onPressed: () => _runTripAction(
-                context,
-                (controller) => controller.confirmArrival(meetup.id),
-              ),
-            ),
-          ],
+        return _StatusCard(
+          headline: aFriendArrived
+              ? 'สายแล้ว!!\nเพื่อนกำลังรอคุณอยู่'
+              : 'กำลังเดินทางไปจุดนัด',
+          imagePath: aFriendArrived
+              ? 'assets/images/mascots/late.png'
+              : 'assets/images/mascots/walking.png',
         );
       case MemberArrivalStatus.notLeftYet:
-      case MemberArrivalStatus.headingHome:
-        final doneBy = formatTime12h(
-          meetup.startTime.add(const Duration(minutes: 20)),
-        );
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('You should be done by $doneBy', style: AppTextStyles.bodyMd),
-            const SizedBox(height: AppSpacing.md),
-            PillButton(
-              label: "I've Left",
-              onPressed: () => _runTripAction(
-                context,
-                (controller) => controller.markCurrentUserLeft(meetup.id),
-              ),
+        return _StatusCard(
+          headline: 'คุณควรออกเดินทางภายได้แล้ว',
+          imagePath: 'assets/images/mascots/prep.png',
+          action: _StatusActionPill(
+            label: 'ออกแล้วจ้า',
+            onPressed: () => _runTripAction(
+              context,
+              (controller) => controller.markCurrentUserLeft(meetup.id),
             ),
-          ],
+          ),
+        );
+      case MemberArrivalStatus.headingHome:
+        return const _StatusCard(
+          headline: 'กำลังเดินทางกลับบ้าน',
+          imagePath: 'assets/images/mascots/walking.png',
         );
     }
+  }
+}
+
+/// Dark status card matching the "your status now" mockups: a caption,
+/// a bold headline, an optional compact action pill, and a mascot
+/// illustration anchored to the trailing edge.
+class _StatusCard extends StatelessWidget {
+  const _StatusCard({
+    required this.headline,
+    required this.imagePath,
+    this.action,
+  });
+
+  final String headline;
+  final String imagePath;
+  final Widget? action;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: AppColors.bgSurface,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('สถานะของคุณตอนนี้', style: AppTextStyles.captionMd),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  headline,
+                  style: AppTextStyles.displayLg.copyWith(fontSize: 20),
+                ),
+                if (action != null) ...[
+                  const SizedBox(height: AppSpacing.md),
+                  action!,
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Image.asset(imagePath, width: 72, height: 72, fit: BoxFit.contain),
+        ],
+      ),
+    );
+  }
+}
+
+/// Compact outlined pill for the status card's inline action - unlike
+/// [PillButton] it sizes to its content instead of stretching full-width,
+/// matching the mockups' small "ออกแล้วจ้า" / "แยกย้ายกลับ" buttons.
+class _StatusActionPill extends StatelessWidget {
+  const _StatusActionPill({required this.label, required this.onPressed});
+
+  final String label;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return OutlinedButton.icon(
+      onPressed: onPressed,
+      icon: const Icon(Icons.check_box, size: 16),
+      label: Text(label),
+      style: OutlinedButton.styleFrom(
+        foregroundColor: AppColors.textPrimary,
+        side: const BorderSide(color: AppColors.accentDanger),
+        shape: const StadiumBorder(),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.xs,
+        ),
+      ),
+    );
   }
 }
 

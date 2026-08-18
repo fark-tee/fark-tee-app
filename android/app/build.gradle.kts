@@ -19,8 +19,9 @@ val mapsApiKey: String = localProperties.getProperty("maps.apiKey", "")
 
 android {
     namespace = "com.balerion.fark_tee_app"
-    // flutter_secure_storage requires compileSdk 37+.
-    compileSdk = 37
+    // flutter_secure_storage requires compileSdk 36+ (pinned to 10.3.1; 11.0.0 needs
+    // compileSdk 37, which has no stable Android SDK release yet).
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {

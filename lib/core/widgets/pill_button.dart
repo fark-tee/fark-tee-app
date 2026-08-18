@@ -13,6 +13,7 @@ class PillButton extends StatelessWidget {
     this.loading = false,
     this.icon,
     this.destructive = false,
+    this.borderColor,
   });
 
   final String label;
@@ -20,6 +21,10 @@ class PillButton extends StatelessWidget {
   final bool loading;
   final IconData? icon;
   final bool destructive;
+
+  /// Optional accent border drawn around the button, e.g. to call out a
+  /// time-sensitive action without switching to the `destructive` fill.
+  final Color? borderColor;
 
   @override
   Widget build(BuildContext context) {
@@ -41,17 +46,22 @@ class PillButton extends StatelessWidget {
             ],
           );
 
+    ButtonStyle? style;
+    if (destructive) {
+      style = FilledButton.styleFrom(
+        backgroundColor: AppColors.accentDanger,
+        foregroundColor: AppColors.textPrimary,
+        shape: const StadiumBorder(),
+      );
+    } else if (borderColor != null) {
+      style = FilledButton.styleFrom(side: BorderSide(color: borderColor!));
+    }
+
     return SizedBox(
       width: double.infinity,
       child: FilledButton(
         onPressed: loading ? null : onPressed,
-        style: destructive
-            ? FilledButton.styleFrom(
-                backgroundColor: AppColors.accentDanger,
-                foregroundColor: AppColors.textPrimary,
-                shape: const StadiumBorder(),
-              )
-            : null,
+        style: style,
         child: child,
       ),
     );
