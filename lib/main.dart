@@ -13,9 +13,6 @@ import 'features/auth/auth_controller.dart';
 import 'features/meetups/data/http_meetup_repository.dart';
 import 'features/meetups/data/meetup_repository.dart';
 import 'features/meetups/meetups_controller.dart';
-import 'features/notifications/data/mock_notifications_repository.dart';
-import 'features/notifications/data/notifications_repository.dart';
-import 'features/notifications/notifications_controller.dart';
 import 'features/profile/data/mock_badges_repository.dart';
 
 void main() async {
@@ -37,8 +34,6 @@ void main() async {
     apiClient: apiClient,
     locationService: LocationService(),
   );
-  final NotificationsRepository notificationsRepository =
-      MockNotificationsRepository();
   final PlacesRepository placesRepository = NominatimPlacesRepository();
   final locationService = LocationService();
 
@@ -51,10 +46,6 @@ void main() async {
             repository: meetupRepository,
             authController: authController,
           ),
-        ),
-        ChangeNotifierProvider(
-          create: (_) =>
-              NotificationsController(repository: notificationsRepository),
         ),
         Provider.value(value: MockBadgesRepository()),
         Provider.value(value: placesRepository),

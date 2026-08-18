@@ -11,7 +11,6 @@ import '../../features/meetups/screens/create_meetup/create_meetup_screen.dart';
 import '../../features/meetups/screens/going_home_screen.dart';
 import '../../features/meetups/screens/live_meetup_screen.dart';
 import '../../features/meetups/screens/meetup_detail_screen.dart';
-import '../../features/notifications/screens/notifications_screen.dart';
 import '../../features/profile/screens/profile_screen.dart';
 import 'app_shell.dart';
 
@@ -20,7 +19,7 @@ final rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
 /// Route-level replacement for the old `_AuthGate` switch widget: the
 /// [redirect] callback below reproduces the same state machine
 /// (checking/unauthenticated/needsProfile/authenticated), but as routing
-/// rules instead of a widget swap, since a real 5-tab bottom nav plus
+/// rules instead of a widget swap, since a real 3-tab bottom nav plus
 /// full-screen flows on top of it need actual routes.
 GoRouter buildAppRouter(AuthController authController) {
   return GoRouter(
@@ -62,14 +61,6 @@ GoRouter buildAppRouter(AuthController authController) {
           ),
           StatefulShellBranch(
             routes: [GoRoute(path: '/groups', builder: (c, s) => const GroupsScreen())],
-          ),
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/notifications',
-                builder: (c, s) => const NotificationsScreen(),
-              ),
-            ],
           ),
           StatefulShellBranch(
             routes: [GoRoute(path: '/profile', builder: (c, s) => const ProfileScreen())],

@@ -4,21 +4,19 @@ import 'package:provider/provider.dart';
 
 import '../../features/auth/auth_controller.dart';
 import '../../features/meetups/meetups_controller.dart';
-import '../../features/notifications/notifications_controller.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_spacing.dart';
 import '../theme/app_text_styles.dart';
 
 const _homeBranchIndex = 0;
 const _groupsBranchIndex = 1;
-const _notificationsBranchIndex = 2;
-const _profileBranchIndex = 3;
+const _profileBranchIndex = 2;
 
-/// Bottom-nav scaffold for the 4 tab roots (Home/Groups/Notifications/
-/// Profile). Each tab keeps its own navigation stack via
-/// [StatefulShellRoute.indexedStack] - full-screen flows (Create Meetup,
-/// Meetup Detail, Live Meetup, Going Home) are pushed on the *root*
-/// navigator instead, so they render above this bar, matching the reference
-/// screenshots.
+/// Bottom-nav scaffold for the 3 tab roots (Home/Groups/Profile). Each tab
+/// keeps its own navigation stack via [StatefulShellRoute.indexedStack] -
+/// full-screen flows (Create Meetup, Meetup Detail, Live Meetup, Going Home)
+/// are pushed on the *root* navigator instead, so they render above this
+/// bar, matching the reference screenshots.
 class AppShell extends StatefulWidget {
   const AppShell({super.key, required this.navigationShell});
 
@@ -30,10 +28,9 @@ class AppShell extends StatefulWidget {
 
 class _AppShellState extends State<AppShell> {
   static const _tabs = [
-    (icon: Icons.home_rounded, label: 'Home'),
-    (icon: Icons.groups_rounded, label: 'Groups'),
-    (icon: Icons.notifications_rounded, label: 'Notif'),
-    (icon: Icons.person_rounded, label: 'Profile'),
+    (image: 'assets/images/nav/home.png', label: 'หน้าหลัก'),
+    (image: 'assets/images/nav/meetups.png', label: 'ตี้'),
+    (image: 'assets/images/nav/profile.png', label: 'โปรไฟล์'),
   ];
 
   @override
@@ -52,8 +49,6 @@ class _AppShellState extends State<AppShell> {
       case _groupsBranchIndex:
         context.read<MeetupsController>().loadGroups();
         context.read<MeetupsController>().loadInvites();
-      case _notificationsBranchIndex:
-        context.read<NotificationsController>().load();
       case _profileBranchIndex:
         context.read<AuthController>().refreshUser();
     }
@@ -77,9 +72,8 @@ class _AppShellState extends State<AppShell> {
                 for (var i = 0; i < _tabs.length; i++)
                   Expanded(
                     child: _NavItem(
-                      icon: _tabs[i].icon,
+                      image: _tabs[i].image,
                       label: _tabs[i].label,
-                      selected: i == navigationShell.currentIndex,
                       onTap: () => navigationShell.goBranch(
                         i,
                         initialLocation: i == navigationShell.currentIndex,
@@ -95,31 +89,38 @@ class _AppShellState extends State<AppShell> {
   }
 }
 
+/// One bottom-bar tab. Every tab renders at the same icon size and the same
+/// label style/color regardless of which one is active - the mockup doesn't
+/// dim or tint the unselected tabs, so there's no selected-vs-unselected
+/// styling here at all.
 class _NavItem extends StatelessWidget {
   const _NavItem({
-    required this.icon,
+    required this.image,
     required this.label,
-    required this.selected,
     required this.onTap,
   });
 
-  final IconData icon;
+  final String image;
   final String label;
-  final bool selected;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final color = selected ? AppColors.textPrimary : AppColors.textMuted;
     return InkWell(
       onTap: onTap,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 22, color: color),
-          const SizedBox(height: 2),
-          Text(label, style: AppTextStyles.microSm.copyWith(color: color)),
-        ],
+      child: Padding(
+        padding: const EdgeInsets.only(top: AppSpacing.sm),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Image.asset(image, height: 28, fit: BoxFit.contain),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: AppTextStyles.microSm.copyWith(color: AppColors.textPrimary),
+            ),
+          ],
+        ),
       ),
     );
   }
