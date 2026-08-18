@@ -26,20 +26,64 @@ class GoogleMapWidget extends MapWidget {
     required super.center,
     super.markers,
     super.onTap,
+    this.onCenterChanged,
+    this.centerController,
   });
+
+  /// Fired once the camera settles (drag released, or a tap/[centerController]
+  /// move finishes animating) - the location-picker screens use this to know
+  /// where a fixed, screen-centered pin (drawn by the caller, not a
+  /// [MapMarker]) currently points to.
+  final ValueChanged<LatLng>? onCenterChanged;
+
+  /// Imperative handle for moving the camera after this widget is already
+  /// mounted (e.g. a "find me" button, or picking a search result) - [center]
+  /// only feeds the platform view's *initial* camera position (see the class
+  /// doc above), so anything that needs to move the already-live map goes
+  /// through this instead.
+  final MapCenterController? centerController;
 
   @override
   Widget build(BuildContext context) {
-    return _GoogleMapView(center: center, markers: markers, onTap: onTap);
+    return _GoogleMapView(
+      center: center,
+      markers: markers,
+      onTap: onTap,
+      onCenterChanged: onCenterChanged,
+      centerController: centerController,
+    );
+  }
+}
+
+/// See [GoogleMapWidget.centerController].
+class MapCenterController {
+  gmaps.GoogleMapController? _controller;
+
+  void _attach(gmaps.GoogleMapController controller) {
+    _controller = controller;
+  }
+
+  Future<void> moveTo(LatLng point) async {
+    await _controller?.animateCamera(
+      gmaps.CameraUpdate.newLatLng(gmaps.LatLng(point.latitude, point.longitude)),
+    );
   }
 }
 
 class _GoogleMapView extends StatefulWidget {
-  const _GoogleMapView({required this.center, required this.markers, this.onTap});
+  const _GoogleMapView({
+    required this.center,
+    required this.markers,
+    this.onTap,
+    this.onCenterChanged,
+    this.centerController,
+  });
 
   final LatLng center;
   final List<MapMarker> markers;
   final ValueChanged<LatLng>? onTap;
+  final ValueChanged<LatLng>? onCenterChanged;
+  final MapCenterController? centerController;
 
   @override
   State<_GoogleMapView> createState() => _GoogleMapViewState();
@@ -52,6 +96,11 @@ class _GoogleMapViewState extends State<_GoogleMapView> {
 
   final Map<String, gmaps.BitmapDescriptor> _avatarIcons = {};
   final Set<String> _pendingUrls = {};
+
+  // Tracked continuously while the camera is moving so the final position is
+  // available once `onCameraIdle` fires (that callback carries no position
+  // of its own).
+  LatLng? _lastCameraTarget;
 
   @override
   void initState() {
@@ -153,9 +202,27 @@ class _GoogleMapViewState extends State<_GoogleMapView> {
         zoom: 15,
       ),
       markers: widget.markers.map(_toGoogleMarker).toSet(),
-      onTap: widget.onTap == null
+      onMapCreated: (controller) => widget.centerController?._attach(controller),
+      onCameraMove: (position) => _lastCameraTarget = LatLng(
+        position.target.latitude,
+        position.target.longitude,
+      ),
+      onCameraIdle: () {
+        final target = _lastCameraTarget;
+        if (target != null) widget.onCenterChanged?.call(target);
+      },
+      onTap: widget.onTap == null && widget.onCenterChanged == null
           ? null
-          : (point) => widget.onTap!(LatLng(point.latitude, point.longitude)),
+          : (point) {
+              final latLng = LatLng(point.latitude, point.longitude);
+              widget.onTap?.call(latLng);
+              // A fixed-pin picker: taps recenter the camera under the pin
+              // rather than reporting the raw tap point directly - the
+              // resulting `onCameraIdle` above reports it once settled.
+              if (widget.onCenterChanged != null) {
+                widget.centerController?.moveTo(latLng);
+              }
+            },
       myLocationEnabled: false,
       myLocationButtonEnabled: false,
       zoomControlsEnabled: false,

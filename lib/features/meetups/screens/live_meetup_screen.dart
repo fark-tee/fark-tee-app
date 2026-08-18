@@ -413,10 +413,10 @@ class _CurrentUserStatusCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final everyoneArrived = meetup.members.every(
-      (m) => m.arrivalStatus == MemberArrivalStatus.arrived,
+      (m) => m.arrivalStatus == MemberArrivalStatus.arrived || m.arrivalStatus == MemberArrivalStatus.returned || m.arrivalStatus == MemberArrivalStatus.headingHome,
     );
 
-    if (everyoneArrived) {
+    if (everyoneArrived && meetup.currentUser.arrivalStatus == MemberArrivalStatus.arrived) {
       return _StatusCard(
         headline: 'ทุกคนถึงครบแล้ว',
         imagePath: 'assets/images/mascots/all_arrived.png',

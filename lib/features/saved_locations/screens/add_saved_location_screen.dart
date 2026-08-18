@@ -4,22 +4,25 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/location/location_service.dart';
 import '../../../core/places/place_result.dart';
 import '../../../core/places/places_repository.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/map/center_pin.dart';
 import '../../../core/widgets/map/google_map_widget.dart';
 import '../../../core/widgets/map/lat_lng.dart';
-import '../../../core/widgets/map/map_marker.dart';
+import '../../../core/widgets/map/locate_me_button.dart';
 import '../../../core/widgets/pill_button.dart';
 import '../data/saved_locations_repository.dart';
 
-/// Lets the user save a new destination (POST /v1/saved-locations), reusing
-/// the same search/tap-to-pick-on-map UX as the Create Meetup wizard's
-/// location step, plus a name field since a saved location needs a
-/// user-chosen label ("บ้าน", "ที่ทำงาน", ...) that a place search result
-/// doesn't provide on its own.
+/// Lets the user save a new destination (POST /v1/saved-locations). A pin
+/// fixed at the screen's center marks the spot - search (via Nominatim/OSM
+/// geocoding) or drag the map underneath the pin to move it, each settling
+/// reverse-geocoded via [_onCenterChanged] - plus a name field since a saved
+/// location needs a user-chosen label ("บ้าน", "ที่ทำงาน", ...) that a place
+/// search result doesn't provide on its own.
 class AddSavedLocationScreen extends StatefulWidget {
   const AddSavedLocationScreen({super.key});
 
@@ -36,12 +39,14 @@ class _AddSavedLocationScreenState extends State<AddSavedLocationScreen> {
 
   final _searchController = TextEditingController();
   final _nameController = TextEditingController();
+  final _mapController = MapCenterController();
   Timer? _debounceTimer;
   String _query = '';
   List<PlaceResult> _results = [];
   bool _searching = false;
-  bool _resolvingTap = false;
+  bool _resolvingCenter = false;
   bool _saving = false;
+  bool _locating = false;
   PlaceResult? _selected;
 
   @override
@@ -72,24 +77,51 @@ class _AddSavedLocationScreenState extends State<AddSavedLocationScreen> {
     });
   }
 
+  /// Selecting a search result just moves the camera - the pin stays fixed
+  /// on screen, so [_onCenterChanged] is what actually records the pick once
+  /// the camera settles there.
   void _select(PlaceResult place) {
     setState(() {
-      _selected = place;
       _query = '';
       _results = [];
       _searchController.clear();
-      if (_nameController.text.trim().isEmpty) {
-        _nameController.text = place.name;
-      }
+    });
+    _mapController.moveTo(place.position);
+  }
+
+  /// Fired whenever the camera settles - after a drag, a tap, a search pick,
+  /// or "find me" - with whatever point is now under the fixed center pin.
+  /// Wherever the pin stops, the name field follows it - always overwritten
+  /// with that spot's name, not just filled in when empty.
+  Future<void> _onCenterChanged(LatLng point) async {
+    setState(() => _resolvingCenter = true);
+    final place = await context.read<PlacesRepository>().reverseGeocode(point);
+    if (!mounted) return;
+    setState(() {
+      _resolvingCenter = false;
+      _selected = place ??
+          PlaceResult(
+            name: 'ตำแหน่งที่เลือก',
+            address:
+                '${point.latitude.toStringAsFixed(5)}, ${point.longitude.toStringAsFixed(5)}',
+            position: point,
+          );
+      _nameController.text = _selected!.name;
     });
   }
 
-  Future<void> _selectFromTap(LatLng point) async {
-    setState(() => _resolvingTap = true);
-    final place = await context.read<PlacesRepository>().reverseGeocode(point);
-    if (!mounted) return;
-    setState(() => _resolvingTap = false);
-    if (place != null) _select(place);
+  Future<void> _useCurrentLocation() async {
+    setState(() => _locating = true);
+    try {
+      final position = await context.read<LocationService>().getCurrentPosition();
+      if (!mounted) return;
+      await _mapController.moveTo(position);
+    } on LocationServiceException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+    } finally {
+      if (mounted) setState(() => _locating = false);
+    }
   }
 
   Future<void> _save() async {
@@ -257,24 +289,32 @@ class _AddSavedLocationScreenState extends State<AddSavedLocationScreen> {
                     fit: StackFit.expand,
                     children: [
                       GoogleMapWidget(
-                        center: _selected?.position ?? _defaultCenter,
-                        markers: [
-                          if (_selected != null)
-                            MapMarker(
-                              id: 'selected-location',
-                              position: _selected!.position,
-                              type: MapMarkerType.venue,
-                              label: _selected!.name,
-                              caption: _selected!.name,
-                            ),
-                        ],
-                        onTap: _selectFromTap,
+                        center: _defaultCenter,
+                        onCenterChanged: _onCenterChanged,
+                        centerController: _mapController,
                       ),
-                      if (_resolvingTap)
-                        const ColoredBox(
-                          color: Colors.black38,
-                          child: Center(child: CircularProgressIndicator()),
+                      const CenterPin(),
+                      if (_resolvingCenter)
+                        const Positioned(
+                          top: AppSpacing.sm,
+                          left: 0,
+                          right: 0,
+                          child: Center(
+                            child: SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          ),
                         ),
+                      Positioned(
+                        right: AppSpacing.sm,
+                        bottom: AppSpacing.sm,
+                        child: LocateMeButton(
+                          loading: _locating,
+                          onPressed: _useCurrentLocation,
+                        ),
+                      ),
                     ],
                   ),
                 ),

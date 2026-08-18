@@ -104,10 +104,10 @@ class _NudgeAlertScreenState extends State<NudgeAlertScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(
-                      Icons.notifications_active,
-                      color: AppColors.textPrimary,
-                      size: 96,
+                    Image.asset(
+                      'assets/images/mascots/t.png',
+                      width: 160,
+                      height: 160,
                     ),
                     const SizedBox(height: AppSpacing.xxl),
                     Text(

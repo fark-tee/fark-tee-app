@@ -40,10 +40,10 @@ class _SignInScreenState extends State<SignInScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.directions_car_filled, size: 72),
+                Image.asset('assets/images/logo.png', width: 96),
                 const SizedBox(height: 16),
                 Text(
-                  'ยินดีต้อนรับสู่ fark-tee',
+                  'ยินดีต้อนรับสู่ ฝากที',
                   style: Theme.of(context).textTheme.headlineSmall,
                   textAlign: TextAlign.center,
                 ),

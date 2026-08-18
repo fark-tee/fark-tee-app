@@ -60,6 +60,12 @@ class _GoingHomeScreenState extends State<GoingHomeScreen> {
     }
   }
 
+  Future<void> _goToAddLocation() async {
+    await context.push('/saved-locations/add');
+    if (!mounted) return;
+    _loadDestinations();
+  }
+
   Future<void> _confirmGoingHome() async {
     final destination = _destinations.firstWhere((d) => d.id == _selectedId);
     setState(() => _confirming = true);
@@ -101,7 +107,18 @@ class _GoingHomeScreenState extends State<GoingHomeScreen> {
                 style: AppTextStyles.bodyMd.copyWith(color: AppColors.textMuted),
               ),
               const SizedBox(height: AppSpacing.xxl),
-              Text('เลือกปลายทาง', style: AppTextStyles.titleMd),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('เลือกปลายทาง', style: AppTextStyles.titleMd),
+                  TextButton.icon(
+                    onPressed: _goToAddLocation,
+                    style: TextButton.styleFrom(foregroundColor: AppColors.textPrimary),
+                    icon: const Icon(Icons.add, size: 18),
+                    label: const Text('เพิ่มสถานที่ใหม่'),
+                  ),
+                ],
+              ),
               const SizedBox(height: AppSpacing.md),
               Expanded(child: _buildDestinationList()),
               const SizedBox(height: AppSpacing.md),
@@ -144,7 +161,7 @@ class _GoingHomeScreenState extends State<GoingHomeScreen> {
     if (_destinations.isEmpty) {
       return Center(
         child: Text(
-          'ยังไม่มีสถานที่บันทึกไว้ กรุณาเพิ่มสถานที่ในหน้าโปรไฟล์ก่อน',
+          'ยังไม่มีสถานที่บันทึกไว้ กดปุ่ม "เพิ่มสถานที่ใหม่" ด้านบนเพื่อเพิ่ม',
           style: AppTextStyles.bodyMd.copyWith(color: AppColors.textMuted),
           textAlign: TextAlign.center,
         ),
