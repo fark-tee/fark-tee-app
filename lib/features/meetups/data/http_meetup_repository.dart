@@ -59,7 +59,7 @@ class HttpMeetupRepository implements MeetupRepository {
   /// destination isn't part of the party/member schema the server returns,
   /// so if this flag is lost, a "heading home" trip stops posting positions
   /// until the user re-triggers "Go Home".
-  final Map<String, LatLng> _activeReturnTargets = {};
+  final Map<String, ({String label, LatLng position})> _activeReturnTargets = {};
 
   final Map<String, StreamController<Meetup>> _liveControllers = {};
   final Map<String, Timer> _liveTimers = {};
@@ -216,7 +216,10 @@ class HttpMeetupRepository implements MeetupRepository {
     );
     await _updateTripStatus(meetupId, 'RETURNING');
     _activeDepartMeetupIds.remove(meetupId);
-    _activeReturnTargets[meetupId] = destinationPosition;
+    _activeReturnTargets[meetupId] = (
+      label: destinationLabel,
+      position: destinationPosition,
+    );
   }
 
   Future<void> _updateTripStatus(String meetupId, String status) {
@@ -391,7 +394,8 @@ class HttpMeetupRepository implements MeetupRepository {
         await _updateTripStatus(meetupId, 'ARRIVED');
         meetup.currentUser.arrivalStatus = MemberArrivalStatus.arrived;
       } else if (returnTarget != null &&
-          _distanceMeters(currentPosition, returnTarget) <= _arrivalRadiusMeters) {
+          _distanceMeters(currentPosition, returnTarget.position) <=
+              _arrivalRadiusMeters) {
         _activeReturnTargets.remove(meetupId);
         await _updateTripStatus(meetupId, 'RETURNED');
         meetup.currentUser.arrivalStatus = MemberArrivalStatus.returned;
@@ -468,7 +472,22 @@ class HttpMeetupRepository implements MeetupRepository {
       members: members,
     );
     _reconcileActiveDepart(party.id, meetup);
+    _attachReturnDestination(party.id, meetup);
     return meetup;
+  }
+
+  /// Attaches this device's chosen "go home" destination (tracked only in
+  /// [_activeReturnTargets], since it isn't part of the party/member schema
+  /// the server returns - see that field's doc comment) onto the current
+  /// user's member model, so the live map can plot their target and a route
+  /// to it while they're heading home.
+  void _attachReturnDestination(String meetupId, Meetup meetup) {
+    if (_currentUserId == null) return;
+    final target = _activeReturnTargets[meetupId];
+    if (target == null) return;
+    if (meetup.currentUser.arrivalStatus != MemberArrivalStatus.headingHome) return;
+    meetup.currentUser.destinationLabel = target.label;
+    meetup.currentUser.destinationPosition = target.position;
   }
 
   /// Keeps [_activeDepartMeetupIds] in sync with the server's own view of

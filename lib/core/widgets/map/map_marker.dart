@@ -1,9 +1,11 @@
 import 'lat_lng.dart';
 
-enum MapMarkerType { venue, member }
+enum MapMarkerType { venue, member, destination }
 
 /// A pin on a [MapWidget]. `label` is the venue name for [MapMarkerType.venue]
-/// pins, or the member's initials for [MapMarkerType.member] pins.
+/// pins, the member's initials for [MapMarkerType.member] pins, or the saved
+/// location's name for [MapMarkerType.destination] pins (a member's "heading
+/// home" target).
 class MapMarker {
   const MapMarker({
     required this.id,

@@ -19,6 +19,8 @@ class MeetupMember {
     this.reportedPosition,
     this.profileImageUrl,
     this.estimatedArrivalAt,
+    this.destinationLabel,
+    this.destinationPosition,
   });
 
   final String userId;
@@ -47,6 +49,14 @@ class MeetupMember {
   /// OSRM-computed estimated arrival time at this member's trip destination,
   /// as of their last reported position. Null until they've started a trip.
   DateTime? estimatedArrivalAt;
+
+  /// The saved location this member picked when heading home (see
+  /// `MeetupsController.goHome`), so the live map can plot their target and
+  /// a route to it. Only ever set for [MemberArrivalStatus.headingHome] -
+  /// there's no equivalent for the depart leg, whose target is always the
+  /// meetup venue.
+  String? destinationLabel;
+  LatLng? destinationPosition;
 
   /// Interpolates a live map position between [startPosition] and [venue]
   /// based on how much of the walk remains. Falls back to [venue] once

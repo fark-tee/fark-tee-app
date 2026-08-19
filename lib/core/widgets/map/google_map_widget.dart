@@ -7,6 +7,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart' as gmaps;
 import '../../theme/app_colors.dart';
 import 'lat_lng.dart';
 import 'map_marker.dart';
+import 'map_route.dart';
 import 'map_widget.dart';
 
 /// Real Google Maps-backed `MapWidget` (display only - see `MockMapWidget`
@@ -28,7 +29,12 @@ class GoogleMapWidget extends MapWidget {
     super.onTap,
     this.onCenterChanged,
     this.centerController,
+    this.routes = const [],
   });
+
+  /// Lines to draw on the map, e.g. a returning member's path to their
+  /// chosen destination (see [MapMarkerType.destination]).
+  final List<MapRoute> routes;
 
   /// Fired once the camera settles (drag released, or a tap/[centerController]
   /// move finishes animating) - the location-picker screens use this to know
@@ -51,6 +57,7 @@ class GoogleMapWidget extends MapWidget {
       onTap: onTap,
       onCenterChanged: onCenterChanged,
       centerController: centerController,
+      routes: routes,
     );
   }
 }
@@ -77,6 +84,7 @@ class _GoogleMapView extends StatefulWidget {
     this.onTap,
     this.onCenterChanged,
     this.centerController,
+    this.routes = const [],
   });
 
   final LatLng center;
@@ -84,6 +92,7 @@ class _GoogleMapView extends StatefulWidget {
   final ValueChanged<LatLng>? onTap;
   final ValueChanged<LatLng>? onCenterChanged;
   final MapCenterController? centerController;
+  final List<MapRoute> routes;
 
   @override
   State<_GoogleMapView> createState() => _GoogleMapViewState();
@@ -202,6 +211,7 @@ class _GoogleMapViewState extends State<_GoogleMapView> {
         zoom: 15,
       ),
       markers: widget.markers.map(_toGoogleMarker).toSet(),
+      polylines: widget.routes.map(_toGooglePolyline).toSet(),
       onMapCreated: (controller) => widget.centerController?._attach(controller),
       onCameraMove: (position) => _lastCameraTarget = LatLng(
         position.target.latitude,
@@ -233,6 +243,14 @@ class _GoogleMapViewState extends State<_GoogleMapView> {
   gmaps.LatLng _toGoogleLatLng(LatLng point) =>
       gmaps.LatLng(point.latitude, point.longitude);
 
+  gmaps.Polyline _toGooglePolyline(MapRoute route) => gmaps.Polyline(
+    polylineId: gmaps.PolylineId(route.id),
+    points: route.points.map(_toGoogleLatLng).toList(),
+    color: AppColors.accentDanger,
+    width: 4,
+    patterns: [gmaps.PatternItem.dash(16), gmaps.PatternItem.gap(10)],
+  );
+
   gmaps.Marker _toGoogleMarker(MapMarker marker) {
     final avatarIcon = marker.profileImageUrl == null
         ? null
@@ -243,6 +261,7 @@ class _GoogleMapViewState extends State<_GoogleMapView> {
           MapMarkerType.venue => gmaps.BitmapDescriptor.hueOrange,
           MapMarkerType.member when marker.isCurrentUser => gmaps.BitmapDescriptor.hueRed,
           MapMarkerType.member => gmaps.BitmapDescriptor.hueAzure,
+          MapMarkerType.destination => gmaps.BitmapDescriptor.hueGreen,
         });
 
     return gmaps.Marker(

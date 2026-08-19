@@ -333,6 +333,8 @@ class MockMeetupRepository implements MeetupRepository {
     await Future.delayed(_networkDelay);
     final meetup = await getMeetup(meetupId);
     meetup.currentUser.arrivalStatus = MemberArrivalStatus.headingHome;
+    meetup.currentUser.destinationLabel = destinationLabel;
+    meetup.currentUser.destinationPosition = destinationPosition;
     _liveControllers[meetupId]?.add(meetup);
   }
 

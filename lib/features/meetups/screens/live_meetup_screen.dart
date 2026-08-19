@@ -12,6 +12,7 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/date_format.dart';
 import '../../../core/widgets/avatar_circle.dart';
 import '../../../core/widgets/map/map_marker.dart';
+import '../../../core/widgets/map/map_route.dart';
 import '../../../core/widgets/map/google_map_widget.dart';
 import '../../../core/widgets/pill_button.dart';
 import '../../../core/widgets/section_header.dart';
@@ -78,6 +79,12 @@ class _LiveMeetupScreenState extends State<LiveMeetupScreen> {
         .where((m) => m.arrivalStatus == MemberArrivalStatus.onTheWay)
         .length;
 
+    final returningMembers = meetup.members.where(
+      (m) =>
+          m.arrivalStatus == MemberArrivalStatus.headingHome &&
+          m.destinationPosition != null,
+    );
+
     return Scaffold(
       body: Stack(
         children: [
@@ -100,6 +107,23 @@ class _LiveMeetupScreenState extends State<LiveMeetupScreen> {
                     isCurrentUser: member.isCurrentUser,
                     caption: _captionFor(member),
                     profileImageUrl: member.profileImageUrl,
+                  ),
+                for (final member in returningMembers)
+                  MapMarker(
+                    id: '${member.userId}-destination',
+                    position: member.destinationPosition!,
+                    type: MapMarkerType.destination,
+                    label: member.destinationLabel ?? 'บ้าน',
+                  ),
+              ],
+              routes: [
+                for (final member in returningMembers)
+                  MapRoute(
+                    id: '${member.userId}-route-home',
+                    points: [
+                      member.currentPosition(meetup.location.position),
+                      member.destinationPosition!,
+                    ],
                   ),
               ],
             ),

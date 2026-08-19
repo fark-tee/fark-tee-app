@@ -88,7 +88,10 @@ class _GoingHomeScreenState extends State<GoingHomeScreen> {
       return;
     }
 
-    context.go('/home');
+    // Pop back to the live map (not `context.go('/home')`, which would reset
+    // the whole nav stack) so the user can actually see their own "heading
+    // home" destination pin and route on it.
+    context.pop();
   }
 
   @override
