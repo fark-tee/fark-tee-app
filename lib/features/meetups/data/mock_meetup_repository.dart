@@ -467,7 +467,6 @@ class MockMeetupRepository implements MeetupRepository {
     String meetupId,
     String targetUserId, {
     required int score,
-    String comment = '',
   }) async {
     await Future.delayed(_networkDelay);
     final meetup = await getMeetup(meetupId);
@@ -477,7 +476,6 @@ class MockMeetupRepository implements MeetupRepository {
       reviewerId: meetup.currentUser.userId,
       targetUserId: targetUserId,
       score: score,
-      comment: comment,
       createdAt: DateTime.now(),
     );
     final reviews = _reviewsByMeetupId.putIfAbsent(meetupId, () => []);

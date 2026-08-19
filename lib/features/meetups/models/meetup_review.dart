@@ -7,7 +7,6 @@ class MeetupReview {
     required this.reviewerId,
     required this.targetUserId,
     required this.score,
-    required this.comment,
     required this.createdAt,
   });
 
@@ -16,6 +15,5 @@ class MeetupReview {
   final String reviewerId;
   final String targetUserId;
   final int score;
-  final String comment;
   final DateTime createdAt;
 }

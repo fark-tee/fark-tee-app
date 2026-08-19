@@ -169,14 +169,7 @@ class _ReviewCard extends StatefulWidget {
 
 class _ReviewCardState extends State<_ReviewCard> {
   int _score = 0;
-  final _commentController = TextEditingController();
   bool _submitting = false;
-
-  @override
-  void dispose() {
-    _commentController.dispose();
-    super.dispose();
-  }
 
   Future<void> _submit() async {
     setState(() => _submitting = true);
@@ -186,7 +179,6 @@ class _ReviewCardState extends State<_ReviewCard> {
       widget.meetupId,
       widget.member.userId,
       score: _score,
-      comment: _commentController.text.trim(),
     );
     if (!mounted) return;
     setState(() => _submitting = false);
@@ -227,39 +219,10 @@ class _ReviewCardState extends State<_ReviewCard> {
           ),
           if (submitted == null) ...[
             const SizedBox(height: AppSpacing.md),
-            Container(
-              decoration: BoxDecoration(
-                color: AppColors.bgSurface,
-                borderRadius: BorderRadius.circular(AppRadius.md),
-                border: Border.all(color: AppColors.borderSubtle, width: 0.6),
-              ),
-              child: TextField(
-                controller: _commentController,
-                style: AppTextStyles.bodyMd,
-                maxLength: 500,
-                decoration: InputDecoration(
-                  hintText: 'บอกอะไรเพิ่มเติมไหม (ไม่บังคับ)',
-                  hintStyle: AppTextStyles.bodyMd.copyWith(color: AppColors.textMuted),
-                  border: InputBorder.none,
-                  counterText: '',
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.md,
-                    vertical: AppSpacing.md,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: AppSpacing.sm),
             PillButton(
               label: 'ส่งคะแนน',
               loading: _submitting,
               onPressed: _score == 0 ? null : _submit,
-            ),
-          ] else if (submitted.comment.isNotEmpty) ...[
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              submitted.comment,
-              style: AppTextStyles.bodyMd.copyWith(color: AppColors.textMuted),
             ),
           ],
         ],

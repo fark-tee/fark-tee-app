@@ -367,11 +367,10 @@ class HttpMeetupRepository implements MeetupRepository {
     String meetupId,
     String targetUserId, {
     required int score,
-    String comment = '',
   }) async {
     final response = await _apiClient.dio.post<Map<String, dynamic>>(
       '/v1/parties/$meetupId/members/$targetUserId/review',
-      data: {'score': score, 'comment': comment},
+      data: {'score': score},
     );
     return _toMeetupReview(ReviewDto.fromJson(response.data!));
   }
@@ -396,7 +395,6 @@ class HttpMeetupRepository implements MeetupRepository {
       reviewerId: dto.reviewerId,
       targetUserId: dto.targetUserId,
       score: dto.score,
-      comment: dto.comment,
       createdAt: dto.createdAt,
     );
   }

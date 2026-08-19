@@ -8,7 +8,6 @@ class ReviewDto {
     required this.reviewerId,
     required this.targetUserId,
     required this.score,
-    required this.comment,
     required this.createdAt,
   });
 
@@ -19,7 +18,6 @@ class ReviewDto {
       reviewerId: json['reviewerId'] as String,
       targetUserId: json['targetUserId'] as String,
       score: json['score'] as int,
-      comment: json['comment'] as String? ?? '',
       createdAt: DateTime.parse(json['createdAt'] as String),
     );
   }
@@ -29,6 +27,5 @@ class ReviewDto {
   final String reviewerId;
   final String targetUserId;
   final int score;
-  final String comment;
   final DateTime createdAt;
 }

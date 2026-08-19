@@ -367,16 +367,10 @@ class MeetupsController extends ChangeNotifier {
     String meetupId,
     String targetUserId, {
     required int score,
-    String comment = '',
   }) async {
     errorMessage = null;
     try {
-      return await _repository.submitReview(
-        meetupId,
-        targetUserId,
-        score: score,
-        comment: comment,
-      );
+      return await _repository.submitReview(meetupId, targetUserId, score: score);
     } on DioException catch (e) {
       errorMessage = _tripErrorMessage(
         e,

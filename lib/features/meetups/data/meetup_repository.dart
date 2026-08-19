@@ -98,7 +98,6 @@ abstract class MeetupRepository {
     String meetupId,
     String targetUserId, {
     required int score,
-    String comment,
   });
 
   /// Every review the current user has left within [meetupId].
