@@ -15,6 +15,10 @@ const String checkInNotificationPayload = 'checkin_alert';
 /// emergency broadcast.
 const String checkInEmergencyNotificationPayload = 'checkin_emergency_alert';
 
+/// Same idea as [nudgeNotificationPayload], for a "you've been invited to a
+/// meetup" notification.
+const String partyInviteNotificationPayload = 'party_invite_alert';
+
 /// Runs when a notification this app posted is tapped while the Dart VM
 /// backing the plugin call is a background isolate (i.e. the app process
 /// wasn't already running in the foreground). There is no live widget tree
@@ -79,6 +83,17 @@ class NudgeNotificationService {
     importance: Importance.max,
   );
 
+  static const String inviteChannelId = 'party_invite_channel';
+  static const String inviteChannelName = 'แจ้งเตือนคำเชิญตี้';
+  static const String inviteChannelDescription = 'แจ้งเตือนเมื่อมีคนเชิญคุณเข้าร่วมตี้';
+
+  static const AndroidNotificationChannel _inviteAndroidChannel = AndroidNotificationChannel(
+    inviteChannelId,
+    inviteChannelName,
+    description: inviteChannelDescription,
+    importance: Importance.high,
+  );
+
   bool _initialized = false;
 
   /// Sets up the plugin, creates the Android notification channel, and
@@ -113,6 +128,7 @@ class NudgeNotificationService {
       await androidPlugin?.createNotificationChannel(_androidChannel);
       await androidPlugin?.createNotificationChannel(_checkInAndroidChannel);
       await androidPlugin?.createNotificationChannel(_emergencyAndroidChannel);
+      await androidPlugin?.createNotificationChannel(_inviteAndroidChannel);
       // Android 13+ (API 33) requires this explicit runtime request for
       // POST_NOTIFICATIONS - a no-op on older Android versions.
       await androidPlugin?.requestNotificationsPermission();
@@ -249,6 +265,43 @@ class NudgeNotificationService {
       );
     } catch (e, st) {
       debugPrint('[emergency] showFullScreenCheckInEmergencyAlert failed: $e\n$st');
+    }
+  }
+
+  /// Shows a "you've been invited to a meetup" notification. Unlike
+  /// [showFullScreenNudgeAlert] and its siblings, an invite isn't
+  /// time-critical, so this is a normal heads-up notification (no
+  /// full-screen intent, no forced wake) that the user can act on whenever
+  /// they get to it.
+  Future<void> showPartyInviteNotification({
+    required String fromDisplayName,
+    required String meetupName,
+  }) async {
+    const androidDetails = AndroidNotificationDetails(
+      inviteChannelId,
+      inviteChannelName,
+      channelDescription: inviteChannelDescription,
+      importance: Importance.high,
+      priority: Priority.high,
+    );
+    const iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+      sound: 'default',
+    );
+    const details = NotificationDetails(android: androidDetails, iOS: iosDetails);
+
+    try {
+      await plugin.show(
+        DateTime.now().millisecondsSinceEpoch ~/ 1000,
+        'คำเชิญตี้ใหม่!',
+        '$fromDisplayName เชิญคุณไปที่ $meetupName',
+        details,
+        payload: partyInviteNotificationPayload,
+      );
+    } catch (e, st) {
+      debugPrint('[invite] showPartyInviteNotification failed: $e\n$st');
     }
   }
 

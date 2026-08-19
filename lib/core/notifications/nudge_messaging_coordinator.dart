@@ -1,5 +1,6 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../features/meetups/screens/checkin_alert_screen.dart';
 import '../../features/meetups/screens/emergency_alert_screen.dart';
@@ -9,6 +10,7 @@ import 'nudge_notification_service.dart';
 const String _nudgeDataType = 'nudge';
 const String _checkInDataType = 'checkin_request';
 const String _checkInEmergencyDataType = 'checkin_emergency';
+const String _partyInviteDataType = 'party_invite';
 const String _defaultNudgerName = 'เพื่อนของคุณ';
 
 /// Wires the full FCM nudge lifecycle to the full-screen alert screen:
@@ -29,11 +31,20 @@ class NudgeMessagingCoordinator {
   NudgeMessagingCoordinator({
     required NudgeNotificationService notificationService,
     required GlobalKey<NavigatorState> navigatorKey,
+    VoidCallback? onPartyInvite,
   }) : _notificationService = notificationService,
-       _navigatorKey = navigatorKey;
+       _navigatorKey = navigatorKey,
+       _onPartyInvite = onPartyInvite;
 
   final NudgeNotificationService _notificationService;
   final GlobalKey<NavigatorState> _navigatorKey;
+
+  /// Invoked (in addition to navigating to the Groups tab) whenever a party
+  /// invite notification is acted on, so the caller can refresh its invite
+  /// list - e.g. `MeetupsController.loadInvites` - since a tap navigating to
+  /// an already-mounted Groups screen won't re-trigger its own `initState`
+  /// load.
+  final VoidCallback? _onPartyInvite;
 
   /// Registers the foreground/background-tap FCM listeners. Call once,
   /// early (e.g. right after `runApp`).
@@ -60,6 +71,10 @@ class NudgeMessagingCoordinator {
         _navigateToNudgeAlert(fromDisplayName: _defaultNudgerName);
         return;
       }
+      if (launchPayload == partyInviteNotificationPayload) {
+        _navigateToPartyInvites();
+        return;
+      }
       if (launchPayload == checkInNotificationPayload ||
           launchPayload == checkInEmergencyNotificationPayload) {
         // Neither the meetupId nor the emergency contact fields are carried
@@ -84,6 +99,19 @@ class NudgeMessagingCoordinator {
   }
 
   void _handleForegroundMessage(RemoteMessage message) {
+    if (message.data['type'] == _partyInviteDataType) {
+      // Unlike the alerts below, an invite isn't urgent enough to jump
+      // straight to a screen while the user is already active elsewhere in
+      // the app - just show the same heads-up notification the killed/
+      // backgrounded case would get, and let them act on it whenever.
+      final fromDisplayName = message.data['fromDisplayName'] as String? ?? _defaultNudgerName;
+      final meetupName = message.data['meetupName'] as String? ?? '';
+      _notificationService.showPartyInviteNotification(
+        fromDisplayName: fromDisplayName,
+        meetupName: meetupName,
+      );
+      return;
+    }
     // Foreground data-only messages never auto-display a system
     // notification, so jump straight to the full-screen alert - it starts
     // the looping sound itself as soon as it mounts.
@@ -110,6 +138,8 @@ class NudgeMessagingCoordinator {
           emergencyContactName: data['emergencyContactName'] as String? ?? '',
           emergencyContactPhone: data['emergencyContactPhone'] as String? ?? '',
         );
+      case _partyInviteDataType:
+        _navigateToPartyInvites();
     }
   }
 
@@ -165,5 +195,19 @@ class NudgeMessagingCoordinator {
         ),
       ),
     );
+  }
+
+  /// Navigates to the Groups tab (where pending invites are listed and can
+  /// be accepted/declined) and asks the caller to refresh its invite list -
+  /// the tab may already be mounted, in which case navigating alone wouldn't
+  /// re-trigger its own load.
+  void _navigateToPartyInvites() {
+    _onPartyInvite?.call();
+    final context = _navigatorKey.currentContext;
+    if (context == null) {
+      debugPrint('[invite] root navigator not attached yet - dropping invite nav');
+      return;
+    }
+    context.go('/groups');
   }
 }

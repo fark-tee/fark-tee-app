@@ -56,6 +56,11 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
         await notificationService.showFullScreenCheckInEmergencyAlert(
           fromDisplayName: fromDisplayName,
         );
+      case 'party_invite':
+        await notificationService.showPartyInviteNotification(
+          fromDisplayName: fromDisplayName,
+          meetupName: message.data['meetupName'] as String? ?? '',
+        );
     }
   } catch (e) {
     debugPrint('[nudge][bg isolate] failed to show full-screen alert: $e');
@@ -110,6 +115,11 @@ void main() async {
   final locationService = LocationService();
   final savedLocationsRepository = SavedLocationsRepository(apiClient);
 
+  final meetupsController = MeetupsController(
+    repository: meetupRepository,
+    authController: authController,
+  );
+
   // Everything below is best-effort and gated on `firebaseAvailable`: with
   // only placeholder Firebase config in place (see lib/firebase_options.dart),
   // FCM itself can't work, so there's nothing meaningful for the notification
@@ -119,6 +129,7 @@ void main() async {
   final nudgeMessagingCoordinator = NudgeMessagingCoordinator(
     notificationService: nudgeNotificationService,
     navigatorKey: rootNavigatorKey,
+    onPartyInvite: meetupsController.loadInvites,
   );
   if (firebaseAvailable) {
     // Local-notifications init (Android channel + permission prompts) is
@@ -141,12 +152,7 @@ void main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider.value(value: authController),
-        ChangeNotifierProvider(
-          create: (_) => MeetupsController(
-            repository: meetupRepository,
-            authController: authController,
-          ),
-        ),
+        ChangeNotifierProvider.value(value: meetupsController),
         Provider.value(value: MockBadgesRepository()),
         Provider.value(value: placesRepository),
         Provider.value(value: locationService),
