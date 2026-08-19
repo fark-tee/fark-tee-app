@@ -42,12 +42,18 @@ class _LiveMeetupScreenState extends State<LiveMeetupScreen> {
   Timer? _cooldownRefreshTimer;
   final _sheetController = DraggableScrollableController();
 
+  /// User IDs with at least one story, fetched once when the meetup first
+  /// loads (not on every live poll tick - that would mean N extra requests
+  /// every 2 seconds). Updated locally the moment the current user posts one,
+  /// so their own ring appears instantly without waiting on a re-fetch.
+  Set<String> _membersWithStories = {};
+
   @override
   void initState() {
     super.initState();
-    context.read<MeetupsController>()
-      ..loadMeetup(widget.meetupId)
-      ..startWatchingLive(widget.meetupId);
+    final controller = context.read<MeetupsController>();
+    controller.loadMeetup(widget.meetupId).then(_loadStoryPresence);
+    controller.startWatchingLive(widget.meetupId);
 
     // The live stream (which would otherwise refresh nudge-cooldown UI as a
     // side effect) goes quiet once nobody is en route anymore, but a nudge
@@ -55,6 +61,24 @@ class _LiveMeetupScreenState extends State<LiveMeetupScreen> {
     // "ฝากที" buttons re-enable promptly even with a quiet stream.
     _cooldownRefreshTimer = Timer.periodic(const Duration(seconds: 5), (_) {
       if (mounted) setState(() {});
+    });
+  }
+
+  Future<void> _loadStoryPresence(Meetup meetup) async {
+    final controller = context.read<MeetupsController>();
+    final results = await Future.wait(
+      meetup.members.map(
+        (m) => controller
+            .fetchMemberStories(meetup.id, m.userId)
+            .then((stories) => (m.userId, stories.isNotEmpty)),
+      ),
+    );
+    if (!mounted) return;
+    setState(() {
+      _membersWithStories = {
+        for (final entry in results)
+          if (entry.$2) entry.$1,
+      };
     });
   }
 
@@ -131,10 +155,20 @@ class _LiveMeetupScreenState extends State<LiveMeetupScreen> {
           SafeArea(
             child: _TopBar(meetup: meetup, onTheWayCount: onTheWayCount),
           ),
-          _MemberSheet(meetup: meetup, sheetController: _sheetController),
+          _MemberSheet(
+            meetup: meetup,
+            sheetController: _sheetController,
+            membersWithStories: _membersWithStories,
+          ),
           _StoryCameraOverlay(
             sheetController: _sheetController,
             meetupId: meetup.id,
+            onPosted: () => setState(() {
+              _membersWithStories = {
+                ..._membersWithStories,
+                meetup.currentUser.userId,
+              };
+            }),
           ),
           if (controller.updatingArrivalStatus) const _TravelCalculatingOverlay(),
         ],
@@ -168,7 +202,7 @@ String? _etaLabelFor(MeetupMember member) {
 /// surfaces `controller.errorMessage` via a snackbar - these calls used to be
 /// fire-and-forget, so a rejected request (e.g. a still-pending invite) left
 /// positions silently empty with no feedback to the user.
-Future<void> _runTripAction(
+Future<bool> _runTripAction(
   BuildContext context,
   Future<bool> Function(MeetupsController controller) action,
 ) async {
@@ -179,11 +213,17 @@ Future<void> _runTripAction(
   if (!succeeded && controller.errorMessage != null) {
     messenger.showSnackBar(SnackBar(content: Text(controller.errorMessage!)));
   }
+  return succeeded;
 }
 
 /// Opens the camera, then uploads whatever was captured as a new story photo
-/// for [meetupId].
-Future<void> _captureAndPostStory(BuildContext context, String meetupId) async {
+/// for [meetupId]. Calls [onPosted] on success so the caller can flip on the
+/// current user's story ring immediately, without waiting on a re-fetch.
+Future<void> _captureAndPostStory(
+  BuildContext context,
+  String meetupId, {
+  VoidCallback? onPosted,
+}) async {
   final picked = await ImagePicker().pickImage(
     source: ImageSource.camera,
     maxWidth: 1600,
@@ -191,10 +231,11 @@ Future<void> _captureAndPostStory(BuildContext context, String meetupId) async {
   );
   if (picked == null || !context.mounted) return;
 
-  await _runTripAction(
+  final succeeded = await _runTripAction(
     context,
     (controller) => controller.postStory(meetupId, File(picked.path)),
   );
+  if (succeeded) onPosted?.call();
 }
 
 /// Fetches [member]'s stories for [meetupId] and, if any exist, opens the
@@ -307,10 +348,15 @@ class _TopBar extends StatelessWidget {
 }
 
 class _MemberSheet extends StatelessWidget {
-  const _MemberSheet({required this.meetup, required this.sheetController});
+  const _MemberSheet({
+    required this.meetup,
+    required this.sheetController,
+    required this.membersWithStories,
+  });
 
   final Meetup meetup;
   final DraggableScrollableController sheetController;
+  final Set<String> membersWithStories;
 
   @override
   Widget build(BuildContext context) {
@@ -369,7 +415,11 @@ class _MemberSheet extends StatelessWidget {
               ),
               const SizedBox(height: AppSpacing.lg),
               for (final member in meetup.members)
-                _MemberRow(meetupId: meetup.id, member: member),
+                _MemberRow(
+                  meetupId: meetup.id,
+                  member: member,
+                  hasStory: membersWithStories.contains(member.userId),
+                ),
               const SizedBox(height: AppSpacing.xxl),
             ],
           ),
@@ -394,10 +444,12 @@ class _StoryCameraOverlay extends StatelessWidget {
   const _StoryCameraOverlay({
     required this.sheetController,
     required this.meetupId,
+    required this.onPosted,
   });
 
   final DraggableScrollableController sheetController;
   final String meetupId;
+  final VoidCallback onPosted;
 
   @override
   Widget build(BuildContext context) {
@@ -417,7 +469,7 @@ class _StoryCameraOverlay extends StatelessWidget {
             shape: const CircleBorder(),
             elevation: 4,
             child: InkWell(
-              onTap: () => _captureAndPostStory(context, meetupId),
+              onTap: () => _captureAndPostStory(context, meetupId, onPosted: onPosted),
               customBorder: const CircleBorder(),
               child: const Padding(
                 padding: EdgeInsets.all(14),
@@ -615,10 +667,15 @@ class _StatusActionPill extends StatelessWidget {
 }
 
 class _MemberRow extends StatelessWidget {
-  const _MemberRow({required this.meetupId, required this.member});
+  const _MemberRow({
+    required this.meetupId,
+    required this.member,
+    required this.hasStory,
+  });
 
   final String meetupId;
   final MeetupMember member;
+  final bool hasStory;
 
   @override
   Widget build(BuildContext context) {
@@ -643,6 +700,7 @@ class _MemberRow extends StatelessWidget {
             child: AvatarCircle(
               initials: member.initials,
               imageUrl: member.profileImageUrl,
+              hasStory: hasStory,
             ),
           ),
           const SizedBox(width: AppSpacing.md),

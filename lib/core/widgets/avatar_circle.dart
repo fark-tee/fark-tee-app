@@ -11,6 +11,7 @@ class AvatarCircle extends StatelessWidget {
     this.imageUrl,
     this.size = 32,
     this.borderColor,
+    this.hasStory = false,
   });
 
   final String initials;
@@ -18,10 +19,14 @@ class AvatarCircle extends StatelessWidget {
   final double size;
   final Color? borderColor;
 
+  /// Draws a colored ring (with a small gap) around the avatar, matching the
+  /// "story available" affordance common to most social apps.
+  final bool hasStory;
+
   @override
   Widget build(BuildContext context) {
     final url = imageUrl;
-    return Container(
+    final avatar = Container(
       width: size,
       height: size,
       decoration: BoxDecoration(
@@ -49,6 +54,22 @@ class AvatarCircle extends StatelessWidget {
               ),
             )
           : null,
+    );
+
+    if (!hasStory) return avatar;
+
+    return Container(
+      width: size + 8,
+      height: size + 8,
+      decoration: const BoxDecoration(shape: BoxShape.circle, color: AppColors.accentDanger),
+      alignment: Alignment.center,
+      child: Container(
+        width: size + 2,
+        height: size + 2,
+        decoration: const BoxDecoration(shape: BoxShape.circle, color: AppColors.bgElevated),
+        alignment: Alignment.center,
+        child: avatar,
+      ),
     );
   }
 }
