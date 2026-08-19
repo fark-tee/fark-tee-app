@@ -63,6 +63,7 @@ class MeetupsController extends ChangeNotifier {
   MeetupLocation? draftLocation;
   String draftTitle = '';
   DateTime? draftStartTime;
+  String? draftNote;
   final Set<String> draftInvitedFriendIds = {};
 
   void _syncCurrentUserIdentity() {
@@ -137,6 +138,7 @@ class MeetupsController extends ChangeNotifier {
     draftLocation = null;
     draftTitle = '';
     draftStartTime = null;
+    draftNote = null;
     draftInvitedFriendIds.clear();
   }
 
@@ -145,9 +147,14 @@ class MeetupsController extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setDraftDetails({required String title, required DateTime startTime}) {
+  void setDraftDetails({
+    required String title,
+    required DateTime startTime,
+    String? note,
+  }) {
     draftTitle = title;
     draftStartTime = startTime;
+    draftNote = note;
     notifyListeners();
   }
 
@@ -186,6 +193,7 @@ class MeetupsController extends ChangeNotifier {
       title: draftTitle,
       location: draftLocation!,
       startTime: draftStartTime!,
+      note: draftNote,
       members: members,
     );
     selectedMeetup = meetup;

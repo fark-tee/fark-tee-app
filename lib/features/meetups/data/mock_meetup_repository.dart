@@ -301,6 +301,7 @@ class MockMeetupRepository implements MeetupRepository {
     required String title,
     required MeetupLocation location,
     required DateTime startTime,
+    String? note,
     required List<MeetupMember> members,
   }) async {
     await Future.delayed(_networkDelay);
@@ -311,6 +312,7 @@ class MockMeetupRepository implements MeetupRepository {
       startTime: startTime,
       status: MeetupStatus.upcoming,
       members: members,
+      note: note,
     );
     _meetups.insert(0, meetup);
     return meetup;

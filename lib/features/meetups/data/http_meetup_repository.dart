@@ -136,8 +136,10 @@ class HttpMeetupRepository implements MeetupRepository {
     required String title,
     required MeetupLocation location,
     required DateTime startTime,
+    String? note,
     required List<MeetupMember> members,
   }) async {
+    final trimmedNote = note?.trim();
     final response = await _apiClient.dio.post<Map<String, dynamic>>(
       '/v1/parties',
       data: {
@@ -146,6 +148,7 @@ class HttpMeetupRepository implements MeetupRepository {
         'destinationLat': location.position.latitude,
         'destinationLng': location.position.longitude,
         'targetTime': startTime.toUtc().toIso8601String(),
+        if (trimmedNote != null && trimmedNote.isNotEmpty) 'note': trimmedNote,
       },
     );
     final party = PartyDto.fromJson(response.data!);
@@ -537,6 +540,7 @@ class HttpMeetupRepository implements MeetupRepository {
       startTime: party.targetTime,
       status: _deriveStatus(party.targetTime),
       members: members,
+      note: party.note,
     );
     _reconcileActiveDepart(party.id, meetup);
     _attachReturnDestination(party.id, meetup);

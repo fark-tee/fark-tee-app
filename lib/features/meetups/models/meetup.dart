@@ -10,6 +10,7 @@ class Meetup {
     required this.startTime,
     required this.members,
     this.status = MeetupStatus.upcoming,
+    this.note,
   });
 
   final String id;
@@ -18,6 +19,10 @@ class Meetup {
   DateTime startTime;
   MeetupStatus status;
   List<MeetupMember> members;
+
+  /// Optional free-text reminder set by the creator (e.g. "bring cash"),
+  /// visible to every member on the meetup detail screen.
+  String? note;
 
   DateTime get locationSharingOpensAt =>
       startTime.subtract(const Duration(hours: 1));

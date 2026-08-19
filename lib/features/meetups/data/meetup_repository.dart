@@ -38,6 +38,7 @@ abstract class MeetupRepository {
     required String title,
     required MeetupLocation location,
     required DateTime startTime,
+    String? note,
     required List<MeetupMember> members,
   });
 

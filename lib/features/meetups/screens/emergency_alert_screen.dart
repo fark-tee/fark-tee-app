@@ -47,7 +47,7 @@ class _EmergencyAlertScreenState extends State<EmergencyAlertScreen> {
   Future<void> _startLoopingSound() async {
     try {
       await _player.setReleaseMode(ReleaseMode.loop);
-      await _player.play(AssetSource('sounds/nudge_alert.mp3'));
+      await _player.play(AssetSource('sounds/emergency_alert.mp3'));
     } catch (e) {
       debugPrint('[emergency] failed to play alert sound (asset likely missing): $e');
     }

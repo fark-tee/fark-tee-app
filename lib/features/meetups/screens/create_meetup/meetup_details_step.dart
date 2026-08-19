@@ -29,6 +29,7 @@ class MeetupDetailsStep extends StatefulWidget {
 
 class _MeetupDetailsStepState extends State<MeetupDetailsStep> {
   late final TextEditingController _titleController;
+  late final TextEditingController _noteController;
   DateTime? _date;
   TimeOfDay? _time;
 
@@ -37,6 +38,7 @@ class _MeetupDetailsStepState extends State<MeetupDetailsStep> {
     super.initState();
     final draft = context.read<MeetupsController>();
     _titleController = TextEditingController(text: draft.draftTitle);
+    _noteController = TextEditingController(text: draft.draftNote ?? '');
     final startTime = draft.draftStartTime;
     if (startTime != null) {
       _date = DateTime(startTime.year, startTime.month, startTime.day);
@@ -47,6 +49,7 @@ class _MeetupDetailsStepState extends State<MeetupDetailsStep> {
   @override
   void dispose() {
     _titleController.dispose();
+    _noteController.dispose();
     super.dispose();
   }
 
@@ -78,9 +81,11 @@ class _MeetupDetailsStepState extends State<MeetupDetailsStep> {
     final date = _date;
     final time = _time;
     if (date == null || time == null) return;
+    final note = _noteController.text.trim();
     context.read<MeetupsController>().setDraftDetails(
       title: _titleController.text.trim(),
       startTime: DateTime(date.year, date.month, date.day, time.hour, time.minute),
+      note: note.isEmpty ? null : note,
     );
     widget.onConfirmed();
   }
@@ -137,6 +142,29 @@ class _MeetupDetailsStepState extends State<MeetupDetailsStep> {
                   icon: Icons.access_time,
                   label: _time == null ? 'เลือกเวลา' : _time!.format(context),
                   onTap: _pickTime,
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                Text('โน้ตเตือนความจำ (ไม่บังคับ)', style: AppTextStyles.labelSm),
+                const SizedBox(height: AppSpacing.sm),
+                Container(
+                  decoration: BoxDecoration(
+                    color: AppColors.bgElevated,
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                    border: Border.all(color: AppColors.borderSubtle, width: 0.6),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                  child: TextField(
+                    controller: _noteController,
+                    style: AppTextStyles.bodyMd,
+                    minLines: 1,
+                    maxLines: 3,
+                    decoration: InputDecoration(
+                      hintText: 'เช่น เตรียมเงินสดไปด้วยนะ',
+                      hintStyle: AppTextStyles.bodyMd.copyWith(color: AppColors.textMuted),
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+                    ),
+                  ),
                 ),
                 const SizedBox(height: AppSpacing.lg),
                 if (location != null)

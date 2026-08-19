@@ -12,6 +12,7 @@ class PartyDto {
     required this.targetTime,
     required this.createdById,
     required this.createdByName,
+    this.note,
   });
 
   factory PartyDto.fromJson(Map<String, dynamic> json) {
@@ -24,6 +25,7 @@ class PartyDto {
       targetTime: DateTime.parse(json['targetTime'] as String),
       createdById: json['createdById'] as String,
       createdByName: json['createdByName'] as String,
+      note: json['note'] as String?,
     );
   }
 
@@ -35,6 +37,7 @@ class PartyDto {
   final DateTime targetTime;
   final String createdById;
   final String createdByName;
+  final String? note;
 }
 
 class PartyMemberDto {

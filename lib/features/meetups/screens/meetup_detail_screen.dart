@@ -165,8 +165,31 @@ class _InfoBlock extends StatelessWidget {
               ),
             ],
           ),
+          if (meetup.note != null && meetup.note!.isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.md),
+            _NoteRow(note: meetup.note!),
+          ],
         ],
       ),
+    );
+  }
+}
+
+/// The creator's optional free-text reminder, shown to every member.
+class _NoteRow extends StatelessWidget {
+  const _NoteRow({required this.note});
+
+  final String note;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Icon(Icons.push_pin_outlined, size: 16, color: AppColors.textMuted),
+        const SizedBox(width: AppSpacing.sm),
+        Expanded(child: Text(note, style: AppTextStyles.bodyMd)),
+      ],
     );
   }
 }
