@@ -41,6 +41,14 @@ const _sheetInitialSize = 0.35;
 const _sheetMinSize = 0.15;
 const _sheetMaxSize = 0.85;
 
+/// Statuses where reviewing a member makes sense: they've reached the venue
+/// and aren't still in transit home (see [MemberArrivalStatus.headingHome],
+/// which gets the check-in prompt instead - see [_ReviewButton]).
+const _reviewEligibleStatuses = {
+  MemberArrivalStatus.arrived,
+  MemberArrivalStatus.returned,
+};
+
 class _LiveMeetupScreenState extends State<LiveMeetupScreen> {
   Timer? _cooldownRefreshTimer;
   final _sheetController = DraggableScrollableController();
@@ -809,8 +817,24 @@ class _MemberRow extends StatelessWidget {
             ),
           ),
           if (!member.isCurrentUser &&
-              member.arrivalStatus != MemberArrivalStatus.arrived &&
-              member.arrivalStatus != MemberArrivalStatus.returned) ...[
+              member.arrivalStatus == MemberArrivalStatus.headingHome) ...[
+            const SizedBox(width: AppSpacing.sm),
+            _CheckInButton(
+              status: member.checkInStatus,
+              onPressed: member.checkInStatus == CheckInStatus.pending
+                  ? null
+                  : () => context.read<MeetupsController>().requestCheckIn(
+                      meetupId,
+                      member.userId,
+                    ),
+            ),
+          ] else if (!member.isCurrentUser &&
+              _reviewEligibleStatuses.contains(member.arrivalStatus)) ...[
+            const SizedBox(width: AppSpacing.sm),
+            _ReviewButton(
+              onPressed: () => context.push('/meetup/$meetupId/review'),
+            ),
+          ] else if (!member.isCurrentUser) ...[
             const SizedBox(width: AppSpacing.sm),
             _NudgeButton(
               isOnCooldown: isOnCooldown,
@@ -866,6 +890,76 @@ class _NudgeButton extends StatelessWidget {
             ),
             const SizedBox(width: 6),
             Text(isOnCooldown ? 'โดนละ' : 'ฝากที'),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Shown in place of [_NudgeButton]/[_ReviewButton] while a member is
+/// [MemberArrivalStatus.headingHome] - asks them to confirm they're okay.
+/// Tinted by [status] so the asker can see the last answer at a glance;
+/// tapping always sends a fresh request (server resets it to pending).
+class _CheckInButton extends StatelessWidget {
+  const _CheckInButton({required this.status, required this.onPressed});
+
+  final CheckInStatus status;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final (label, color) = switch (status) {
+      CheckInStatus.pending => ('รอคำตอบ...', AppColors.textMuted),
+      CheckInStatus.ok => ('โอเคแล้ว', BadgeColors.positive),
+      CheckInStatus.notOk => ('ไม่โอเค!', BadgeColors.negative),
+      CheckInStatus.none => ('โอเคนะคะ?', AppColors.textPrimary),
+    };
+
+    return SizedBox(
+      width: 100,
+      child: FilledButton(
+        onPressed: onPressed,
+        style: FilledButton.styleFrom(
+          backgroundColor: AppColors.bgSurface,
+          foregroundColor: color,
+          disabledBackgroundColor: AppColors.bgSurface.withValues(alpha: 0.5),
+          disabledForegroundColor: color,
+          shape: const StadiumBorder(),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+        ),
+        child: Text(label, textAlign: TextAlign.center, maxLines: 1, overflow: TextOverflow.ellipsis),
+      ),
+    );
+  }
+}
+
+/// Shown in place of [_NudgeButton] once a member has reached
+/// [_reviewEligibleStatuses] - opens the review screen to rate them.
+class _ReviewButton extends StatelessWidget {
+  const _ReviewButton({required this.onPressed});
+
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 100,
+      child: FilledButton(
+        onPressed: onPressed,
+        style: FilledButton.styleFrom(
+          backgroundColor: AppColors.bgSurface,
+          foregroundColor: AppColors.textPrimary,
+          shape: const StadiumBorder(),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+        ),
+        child: const Row(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.star, size: 18),
+            SizedBox(width: 6),
+            Text('ให้คะแนน'),
           ],
         ),
       ),

@@ -7,6 +7,10 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 /// having to round-trip through FCM data again.
 const String nudgeNotificationPayload = 'nudge_alert';
 
+/// Same idea as [nudgeNotificationPayload], for a "friend heading home wants
+/// to know you're okay" check-in request.
+const String checkInNotificationPayload = 'checkin_alert';
+
 /// Runs when a notification this app posted is tapped while the Dart VM
 /// backing the plugin call is a background isolate (i.e. the app process
 /// wasn't already running in the foreground). There is no live widget tree
@@ -47,6 +51,18 @@ class NudgeNotificationService {
     importance: Importance.max,
   );
 
+  static const String checkInChannelId = 'checkin_channel';
+  static const String checkInChannelName = 'แจ้งเตือนเช็คอิน';
+  static const String checkInChannelDescription =
+      'แจ้งเตือนเต็มจอเมื่อเพื่อนถามว่าคุณโอเคไหม';
+
+  static const AndroidNotificationChannel _checkInAndroidChannel = AndroidNotificationChannel(
+    checkInChannelId,
+    checkInChannelName,
+    description: checkInChannelDescription,
+    importance: Importance.max,
+  );
+
   bool _initialized = false;
 
   /// Sets up the plugin, creates the Android notification channel, and
@@ -79,6 +95,7 @@ class NudgeNotificationService {
       final androidPlugin = plugin
           .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
       await androidPlugin?.createNotificationChannel(_androidChannel);
+      await androidPlugin?.createNotificationChannel(_checkInAndroidChannel);
       // Android 13+ (API 33) requires this explicit runtime request for
       // POST_NOTIFICATIONS - a no-op on older Android versions.
       await androidPlugin?.requestNotificationsPermission();
@@ -141,6 +158,43 @@ class NudgeNotificationService {
       // granted permission) shouldn't crash the caller - this is best-effort
       // just like every other notification path in this feature.
       debugPrint('[nudge] showFullScreenNudgeAlert failed: $e\n$st');
+    }
+  }
+
+  /// Same shape as [showFullScreenNudgeAlert], for a "your friend heading
+  /// home wants to know you're okay" check-in request.
+  Future<void> showFullScreenCheckInAlert({required String fromDisplayName}) async {
+    final androidDetails = AndroidNotificationDetails(
+      checkInChannelId,
+      checkInChannelName,
+      channelDescription: checkInChannelDescription,
+      importance: Importance.max,
+      priority: Priority.max,
+      fullScreenIntent: true,
+      category: AndroidNotificationCategory.call,
+      visibility: NotificationVisibility.public,
+      ongoing: false,
+      autoCancel: true,
+    );
+    const iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+      sound: 'default',
+      interruptionLevel: InterruptionLevel.timeSensitive,
+    );
+    final details = NotificationDetails(android: androidDetails, iOS: iosDetails);
+
+    try {
+      await plugin.show(
+        DateTime.now().millisecondsSinceEpoch ~/ 1000,
+        'โอเคนะคะ?',
+        '$fromDisplayName อยากรู้ว่าคุณโอเคไหม',
+        details,
+        payload: checkInNotificationPayload,
+      );
+    } catch (e, st) {
+      debugPrint('[checkin] showFullScreenCheckInAlert failed: $e\n$st');
     }
   }
 

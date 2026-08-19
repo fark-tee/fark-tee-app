@@ -1,10 +1,12 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 
+import '../../features/meetups/screens/checkin_alert_screen.dart';
 import '../../features/meetups/screens/nudge_alert_screen.dart';
 import 'nudge_notification_service.dart';
 
 const String _nudgeDataType = 'nudge';
+const String _checkInDataType = 'checkin_request';
 const String _defaultNudgerName = 'เพื่อนของคุณ';
 
 /// Wires the full FCM nudge lifecycle to the full-screen alert screen:
@@ -56,14 +58,37 @@ class NudgeMessagingCoordinator {
         _navigateToNudgeAlert(fromDisplayName: _defaultNudgerName);
         return;
       }
+      if (launchPayload == checkInNotificationPayload) {
+        // The meetupId isn't carried by the local notification payload
+        // (only by the FCM data message below) - if the app was cold
+        // started by tapping this local notification specifically, fall
+        // through to checking FCM's own initial message for it instead of
+        // guessing.
+        final initialMessage = await FirebaseMessaging.instance.getInitialMessage();
+        if (initialMessage != null && initialMessage.data['type'] == _checkInDataType) {
+          _navigateToCheckInAlert(
+            meetupId: initialMessage.data['meetupId'] as String?,
+            fromDisplayName:
+                initialMessage.data['fromDisplayName'] as String? ?? _defaultNudgerName,
+          );
+        }
+        return;
+      }
     } catch (e) {
       debugPrint('[nudge] checkForInitialNudge (local notification) failed: $e');
     }
 
     try {
       final initialMessage = await FirebaseMessaging.instance.getInitialMessage();
-      if (initialMessage != null && initialMessage.data['type'] == _nudgeDataType) {
+      if (initialMessage == null) return;
+      if (initialMessage.data['type'] == _nudgeDataType) {
         _navigateToNudgeAlert(
+          fromDisplayName:
+              initialMessage.data['fromDisplayName'] as String? ?? _defaultNudgerName,
+        );
+      } else if (initialMessage.data['type'] == _checkInDataType) {
+        _navigateToCheckInAlert(
+          meetupId: initialMessage.data['meetupId'] as String?,
           fromDisplayName:
               initialMessage.data['fromDisplayName'] as String? ?? _defaultNudgerName,
         );
@@ -74,20 +99,34 @@ class NudgeMessagingCoordinator {
   }
 
   void _handleForegroundMessage(RemoteMessage message) {
-    if (message.data['type'] != _nudgeDataType) return;
     // Foreground data-only messages never auto-display a system
     // notification, so jump straight to the full-screen alert - it starts
     // the looping sound itself as soon as it mounts.
-    _navigateToNudgeAlert(
-      fromDisplayName: message.data['fromDisplayName'] as String? ?? _defaultNudgerName,
-    );
+    switch (message.data['type']) {
+      case _nudgeDataType:
+        _navigateToNudgeAlert(
+          fromDisplayName: message.data['fromDisplayName'] as String? ?? _defaultNudgerName,
+        );
+      case _checkInDataType:
+        _navigateToCheckInAlert(
+          meetupId: message.data['meetupId'] as String?,
+          fromDisplayName: message.data['fromDisplayName'] as String? ?? _defaultNudgerName,
+        );
+    }
   }
 
   void _handleMessageOpenedApp(RemoteMessage message) {
-    if (message.data['type'] != _nudgeDataType) return;
-    _navigateToNudgeAlert(
-      fromDisplayName: message.data['fromDisplayName'] as String? ?? _defaultNudgerName,
-    );
+    switch (message.data['type']) {
+      case _nudgeDataType:
+        _navigateToNudgeAlert(
+          fromDisplayName: message.data['fromDisplayName'] as String? ?? _defaultNudgerName,
+        );
+      case _checkInDataType:
+        _navigateToCheckInAlert(
+          meetupId: message.data['meetupId'] as String?,
+          fromDisplayName: message.data['fromDisplayName'] as String? ?? _defaultNudgerName,
+        );
+    }
   }
 
   void _navigateToNudgeAlert({required String fromDisplayName}) {
@@ -100,6 +139,24 @@ class NudgeMessagingCoordinator {
       MaterialPageRoute(
         fullscreenDialog: true,
         builder: (_) => NudgeAlertScreen(fromDisplayName: fromDisplayName),
+      ),
+    );
+  }
+
+  void _navigateToCheckInAlert({required String? meetupId, required String fromDisplayName}) {
+    if (meetupId == null) {
+      debugPrint('[checkin] check-in message missing meetupId - dropping alert nav');
+      return;
+    }
+    final navigator = _navigatorKey.currentState;
+    if (navigator == null) {
+      debugPrint('[checkin] root navigator not attached yet - dropping check-in alert nav');
+      return;
+    }
+    navigator.push(
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (_) => CheckInAlertScreen(meetupId: meetupId, fromDisplayName: fromDisplayName),
       ),
     );
   }

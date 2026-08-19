@@ -8,6 +8,7 @@ import '../models/meetup_enums.dart';
 import '../models/meetup_invite.dart';
 import '../models/meetup_location.dart';
 import '../models/meetup_member.dart';
+import '../models/meetup_review.dart';
 import '../models/meetup_story.dart';
 
 /// Meetup data access. `MockMeetupRepository` is the only implementation for
@@ -58,6 +59,15 @@ abstract class MeetupRepository {
   /// Purely social - never mutates the target member's real status.
   Future<void> sendNudge(String meetupId, String memberId);
 
+  /// Asks [memberId] - who must currently be [MemberArrivalStatus.headingHome]
+  /// - to confirm they're okay, via a push notification. Sets their
+  /// [CheckInStatus.pending] until they respond.
+  Future<void> requestCheckIn(String meetupId, String memberId);
+
+  /// Records the current user's answer to their own pending check-in
+  /// request.
+  Future<void> respondCheckIn(String meetupId, CheckInStatus status);
+
   /// Emits the meetup every time simulated member positions/arrivals change.
   /// Callers should cancel their subscription when they navigate away.
   Stream<Meetup> watchMeetup(String meetupId);
@@ -80,4 +90,17 @@ abstract class MeetupRepository {
 
   /// A single member's story photos in this meetup, most recent first.
   Future<List<MeetupStory>> listMemberStories(String meetupId, String userId);
+
+  /// Leaves a review for [targetUserId] within [meetupId], once they've
+  /// arrived at the venue. Throws if the current user has already reviewed
+  /// them for this meetup.
+  Future<MeetupReview> submitReview(
+    String meetupId,
+    String targetUserId, {
+    required int score,
+    String comment,
+  });
+
+  /// Every review the current user has left within [meetupId].
+  Future<List<MeetupReview>> listMyReviews(String meetupId);
 }

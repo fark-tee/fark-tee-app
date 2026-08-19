@@ -42,13 +42,17 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
     debugPrint('[nudge][bg isolate] Firebase.initializeApp failed: $e');
   }
 
-  if (message.data['type'] != 'nudge') return;
   final fromDisplayName = message.data['fromDisplayName'] as String? ?? 'เพื่อนของคุณ';
 
   try {
     final notificationService = NudgeNotificationService();
     await notificationService.initialize();
-    await notificationService.showFullScreenNudgeAlert(fromDisplayName: fromDisplayName);
+    switch (message.data['type']) {
+      case 'nudge':
+        await notificationService.showFullScreenNudgeAlert(fromDisplayName: fromDisplayName);
+      case 'checkin_request':
+        await notificationService.showFullScreenCheckInAlert(fromDisplayName: fromDisplayName);
+    }
   } catch (e) {
     debugPrint('[nudge][bg isolate] failed to show full-screen alert: $e');
   }

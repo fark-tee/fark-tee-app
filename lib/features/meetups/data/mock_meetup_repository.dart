@@ -9,6 +9,7 @@ import '../models/meetup_enums.dart';
 import '../models/meetup_invite.dart';
 import '../models/meetup_location.dart';
 import '../models/meetup_member.dart';
+import '../models/meetup_review.dart';
 import '../models/meetup_story.dart';
 import 'meetup_repository.dart';
 
@@ -36,6 +37,9 @@ class MockMeetupRepository implements MeetupRepository {
 
   /// Keyed by `"$meetupId:$userId"`.
   final Map<String, List<MeetupStory>> _storiesByMemberKey = {};
+
+  /// Keyed by meetupId - the current user's own reviews for that meetup.
+  final Map<String, List<MeetupReview>> _reviewsByMeetupId = {};
 
   static const _networkDelay = Duration(milliseconds: 350);
 
@@ -345,6 +349,24 @@ class MockMeetupRepository implements MeetupRepository {
   }
 
   @override
+  Future<void> requestCheckIn(String meetupId, String memberId) async {
+    await Future.delayed(_networkDelay);
+    final meetup = await getMeetup(meetupId);
+    final member = meetup.otherMembers.firstWhere((m) => m.userId == memberId);
+    member.checkInStatus = CheckInStatus.pending;
+    member.checkInRequestedByUserId = meetup.currentUser.userId;
+    _liveControllers[meetupId]?.add(meetup);
+  }
+
+  @override
+  Future<void> respondCheckIn(String meetupId, CheckInStatus status) async {
+    await Future.delayed(_networkDelay);
+    final meetup = await getMeetup(meetupId);
+    meetup.currentUser.checkInStatus = status;
+    _liveControllers[meetupId]?.add(meetup);
+  }
+
+  @override
   Stream<Meetup> watchMeetup(String meetupId) {
     final existing = _liveControllers[meetupId];
     if (existing != null) return existing.stream;
@@ -438,6 +460,36 @@ class MockMeetupRepository implements MeetupRepository {
   ) async {
     await Future.delayed(_networkDelay);
     return List.unmodifiable(_storiesByMemberKey['$meetupId:$userId'] ?? []);
+  }
+
+  @override
+  Future<MeetupReview> submitReview(
+    String meetupId,
+    String targetUserId, {
+    required int score,
+    String comment = '',
+  }) async {
+    await Future.delayed(_networkDelay);
+    final meetup = await getMeetup(meetupId);
+    final review = MeetupReview(
+      id: 'review-${_idCounter++}',
+      partyId: meetupId,
+      reviewerId: meetup.currentUser.userId,
+      targetUserId: targetUserId,
+      score: score,
+      comment: comment,
+      createdAt: DateTime.now(),
+    );
+    final reviews = _reviewsByMeetupId.putIfAbsent(meetupId, () => []);
+    reviews.removeWhere((r) => r.targetUserId == targetUserId);
+    reviews.add(review);
+    return review;
+  }
+
+  @override
+  Future<List<MeetupReview>> listMyReviews(String meetupId) async {
+    await Future.delayed(_networkDelay);
+    return List.unmodifiable(_reviewsByMeetupId[meetupId] ?? []);
   }
 
   void _tick(String meetupId, StreamController<Meetup> controller) {

@@ -13,6 +13,7 @@ import '../../features/home/home_screen.dart';
 import '../../features/meetups/screens/create_meetup/create_meetup_screen.dart';
 import '../../features/meetups/screens/going_home_screen.dart';
 import '../../features/meetups/screens/live_meetup_screen.dart';
+import '../../features/meetups/screens/review_screen.dart';
 import '../../features/meetups/screens/meetup_detail_screen.dart';
 import '../../features/profile/screens/profile_screen.dart';
 import '../../features/saved_locations/screens/add_saved_location_screen.dart';
@@ -104,6 +105,12 @@ GoRouter buildAppRouter(AuthController authController) {
             parentNavigatorKey: rootNavigatorKey,
             builder: (context, state) =>
                 GoingHomeScreen(meetupId: state.pathParameters['id']!),
+          ),
+          GoRoute(
+            path: 'review',
+            parentNavigatorKey: rootNavigatorKey,
+            builder: (context, state) =>
+                ReviewScreen(meetupId: state.pathParameters['id']!),
           ),
         ],
       ),

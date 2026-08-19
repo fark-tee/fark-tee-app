@@ -18,9 +18,11 @@ import '../models/meetup_enums.dart';
 import '../models/meetup_invite.dart';
 import '../models/meetup_location.dart';
 import '../models/meetup_member.dart';
+import '../models/meetup_review.dart';
 import '../models/meetup_story.dart';
 import 'meetup_repository.dart';
 import 'party_dto.dart';
+import 'review_dto.dart';
 import 'story_dto.dart';
 
 /// Real backend-backed [MeetupRepository]. Maps the backend's Party/Trip/
@@ -244,6 +246,19 @@ class HttpMeetupRepository implements MeetupRepository {
   }
 
   @override
+  Future<void> requestCheckIn(String meetupId, String memberId) async {
+    await _apiClient.dio.post<void>('/v1/parties/$meetupId/members/$memberId/check-in');
+  }
+
+  @override
+  Future<void> respondCheckIn(String meetupId, CheckInStatus status) async {
+    await _apiClient.dio.patch<void>(
+      '/v1/parties/$meetupId/check-in',
+      data: {'status': _checkInStatusWireValue(status)},
+    );
+  }
+
+  @override
   Stream<Meetup> watchMeetup(String meetupId) {
     final existing = _liveControllers[meetupId];
     if (existing != null) return existing.stream;
@@ -345,6 +360,45 @@ class HttpMeetupRepository implements MeetupRepository {
           ),
         )
         .toList();
+  }
+
+  @override
+  Future<MeetupReview> submitReview(
+    String meetupId,
+    String targetUserId, {
+    required int score,
+    String comment = '',
+  }) async {
+    final response = await _apiClient.dio.post<Map<String, dynamic>>(
+      '/v1/parties/$meetupId/members/$targetUserId/review',
+      data: {'score': score, 'comment': comment},
+    );
+    return _toMeetupReview(ReviewDto.fromJson(response.data!));
+  }
+
+  @override
+  Future<List<MeetupReview>> listMyReviews(String meetupId) async {
+    final response = await _apiClient.dio.get<Map<String, dynamic>>(
+      '/v1/parties/$meetupId/reviews',
+    );
+    final reviews = (response.data!['reviews'] as List<dynamic>?) ?? [];
+    return reviews
+        .cast<Map<String, dynamic>>()
+        .map(ReviewDto.fromJson)
+        .map(_toMeetupReview)
+        .toList();
+  }
+
+  MeetupReview _toMeetupReview(ReviewDto dto) {
+    return MeetupReview(
+      id: dto.id,
+      partyId: dto.partyId,
+      reviewerId: dto.reviewerId,
+      targetUserId: dto.targetUserId,
+      score: dto.score,
+      comment: dto.comment,
+      createdAt: dto.createdAt,
+    );
   }
 
   Future<void> _pushUpdate(String meetupId) async {
@@ -469,6 +523,8 @@ class HttpMeetupRepository implements MeetupRepository {
         profileImageUrl: memberDto.userProfileImage.isEmpty
             ? null
             : memberDto.userProfileImage,
+        checkInStatus: _checkInStatusFrom(memberDto.checkInStatus),
+        checkInRequestedByUserId: memberDto.checkInRequestedByUserId,
       );
     }).toList();
 
@@ -544,6 +600,33 @@ MemberArrivalStatus _arrivalStatusFrom(String tripStatus) {
     case 'PENDING_DEPARTURE':
     default:
       return MemberArrivalStatus.notLeftYet;
+  }
+}
+
+CheckInStatus _checkInStatusFrom(String checkInStatus) {
+  switch (checkInStatus) {
+    case 'PENDING':
+      return CheckInStatus.pending;
+    case 'OK':
+      return CheckInStatus.ok;
+    case 'NOT_OK':
+      return CheckInStatus.notOk;
+    case 'NONE':
+    default:
+      return CheckInStatus.none;
+  }
+}
+
+String _checkInStatusWireValue(CheckInStatus status) {
+  switch (status) {
+    case CheckInStatus.pending:
+      return 'PENDING';
+    case CheckInStatus.ok:
+      return 'OK';
+    case CheckInStatus.notOk:
+      return 'NOT_OK';
+    case CheckInStatus.none:
+      return 'NONE';
   }
 }
 

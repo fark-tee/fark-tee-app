@@ -21,6 +21,8 @@ class MeetupMember {
     this.estimatedArrivalAt,
     this.destinationLabel,
     this.destinationPosition,
+    this.checkInStatus = CheckInStatus.none,
+    this.checkInRequestedByUserId,
   });
 
   final String userId;
@@ -57,6 +59,12 @@ class MeetupMember {
   /// meetup venue.
   String? destinationLabel;
   LatLng? destinationPosition;
+
+  /// This member's current "are you okay?" safety check status, and who
+  /// asked (only meaningful while [checkInStatus] is
+  /// [CheckInStatus.pending]).
+  CheckInStatus checkInStatus;
+  String? checkInRequestedByUserId;
 
   /// Interpolates a live map position between [startPosition] and [venue]
   /// based on how much of the walk remains, or falls back to a

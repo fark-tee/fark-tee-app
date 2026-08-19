@@ -15,6 +15,7 @@ import 'models/meetup_enums.dart';
 import 'models/meetup_invite.dart';
 import 'models/meetup_location.dart';
 import 'models/meetup_member.dart';
+import 'models/meetup_review.dart';
 import 'models/meetup_story.dart';
 
 /// Owns meetup lists, the currently-open meetup, the create-meetup wizard
@@ -279,6 +280,18 @@ class MeetupsController extends ChangeNotifier {
         return 'คุณยังไม่ได้ตอบรับคำเชิญเข้าร่วมตี้นี้ จึงยังแชร์ตำแหน่งไม่ได้';
       case 'PARTY_NOT_FOUND':
         return 'ตี้นี้ไม่มีอยู่แล้ว';
+      case 'ALREADY_REVIEWED':
+        return 'คุณให้คะแนนคนนี้ไปแล้ว';
+      case 'MEMBER_NOT_ARRIVED':
+        return 'เพื่อนคนนี้ยังไม่ถึงที่นัด ให้คะแนนไม่ได้';
+      case 'CANNOT_REVIEW_SELF':
+        return 'ให้คะแนนตัวเองไม่ได้';
+      case 'MEMBER_NOT_HEADING_HOME':
+        return 'เพื่อนคนนี้ยังไม่ได้กำลังเดินทางกลับบ้าน';
+      case 'CANNOT_CHECK_IN_SELF':
+        return 'เช็คอินตัวเองไม่ได้';
+      case 'NO_PENDING_CHECK_IN':
+        return 'ไม่มีคำขอเช็คอินที่ต้องตอบ';
       default:
         return fallback;
     }
@@ -293,6 +306,35 @@ class MeetupsController extends ChangeNotifier {
     _nudgeCooldownUntil[memberId] = DateTime.now().add(nudgeCooldown);
     notifyListeners();
     await _repository.sendNudge(meetupId, memberId);
+  }
+
+  /// Asks a member heading home to confirm they're okay. Errors (e.g. the
+  /// member isn't actually heading home anymore) surface via [errorMessage]
+  /// rather than throwing, matching [markCurrentUserLeft]/[confirmArrival].
+  Future<bool> requestCheckIn(String meetupId, String memberId) async {
+    errorMessage = null;
+    try {
+      await _repository.requestCheckIn(meetupId, memberId);
+      return true;
+    } on DioException catch (e) {
+      errorMessage = _tripErrorMessage(e);
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Records the current user's answer to their own pending check-in
+  /// request.
+  Future<bool> respondCheckIn(String meetupId, CheckInStatus status) async {
+    errorMessage = null;
+    try {
+      await _repository.respondCheckIn(meetupId, status);
+      return true;
+    } on DioException catch (e) {
+      errorMessage = _tripErrorMessage(e);
+      notifyListeners();
+      return false;
+    }
   }
 
   Future<bool> postStory(String meetupId, File imageFile) async {
@@ -312,6 +354,37 @@ class MeetupsController extends ChangeNotifier {
 
   Future<List<MeetupStory>> fetchMemberStories(String meetupId, String userId) {
     return _repository.listMemberStories(meetupId, userId);
+  }
+
+  /// Every review the current user has already left for [meetupId], so a
+  /// re-opened review screen can show previously-submitted scores instead of
+  /// blank ones.
+  Future<List<MeetupReview>> fetchMyReviews(String meetupId) {
+    return _repository.listMyReviews(meetupId);
+  }
+
+  Future<MeetupReview?> submitReview(
+    String meetupId,
+    String targetUserId, {
+    required int score,
+    String comment = '',
+  }) async {
+    errorMessage = null;
+    try {
+      return await _repository.submitReview(
+        meetupId,
+        targetUserId,
+        score: score,
+        comment: comment,
+      );
+    } on DioException catch (e) {
+      errorMessage = _tripErrorMessage(
+        e,
+        fallback: 'ให้คะแนนไม่สำเร็จ กรุณาลองใหม่อีกครั้ง',
+      );
+      notifyListeners();
+      return null;
+    }
   }
 
   LatLng venuePosition(Meetup meetup) => meetup.location.position;
