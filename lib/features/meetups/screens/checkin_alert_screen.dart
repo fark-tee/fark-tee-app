@@ -56,7 +56,7 @@ class _CheckInAlertScreenState extends State<CheckInAlertScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Image.asset(
-                  'assets/images/mascots/waiting.png',
+                  'assets/images/mascots/ok.png',
                   width: 160,
                   height: 160,
                 ),
