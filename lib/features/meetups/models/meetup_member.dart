@@ -59,22 +59,40 @@ class MeetupMember {
   LatLng? destinationPosition;
 
   /// Interpolates a live map position between [startPosition] and [venue]
-  /// based on how much of the walk remains. Falls back to [venue] once
-  /// arrived/not tracked, so an arrived member's pin sits on the venue.
-  LatLng currentPosition(LatLng venue) {
+  /// based on how much of the walk remains, or falls back to a
+  /// status-appropriate resting point once there's nothing to interpolate.
+  /// Returns null when this member's real position genuinely isn't known
+  /// yet - e.g. [notLeftYet] or an [onTheWay] member whose first GPS fix
+  /// hasn't landed - rather than fabricating a pin at the venue, which used
+  /// to make members look like they'd already reached the destination
+  /// before they'd actually left home.
+  LatLng? currentPosition(LatLng venue) {
     final reported = reportedPosition;
     if (reported != null) return reported;
 
     final start = startPosition;
     final initial = initialDistanceMeters;
     final remaining = remainingDistanceMeters;
-    if (start == null || initial == null || remaining == null || initial <= 0) {
-      return venue;
+    if (start != null && initial != null && remaining != null && initial > 0) {
+      final t = (1 - remaining / initial).clamp(0.0, 1.0);
+      return LatLng(
+        start.latitude + (venue.latitude - start.latitude) * t,
+        start.longitude + (venue.longitude - start.longitude) * t,
+      );
     }
-    final t = (1 - remaining / initial).clamp(0.0, 1.0);
-    return LatLng(
-      start.latitude + (venue.latitude - start.latitude) * t,
-      start.longitude + (venue.longitude - start.longitude) * t,
-    );
+
+    switch (arrivalStatus) {
+      case MemberArrivalStatus.arrived:
+        return venue;
+      case MemberArrivalStatus.headingHome:
+        // The return leg genuinely starts at the venue - everyone left from
+        // there - so this is a real position, not a placeholder.
+        return venue;
+      case MemberArrivalStatus.returned:
+        return destinationPosition ?? venue;
+      case MemberArrivalStatus.notLeftYet:
+      case MemberArrivalStatus.onTheWay:
+        return null;
+    }
   }
 }

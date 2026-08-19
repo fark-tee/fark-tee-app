@@ -6,11 +6,14 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/location/location_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/date_format.dart';
 import '../../../core/widgets/avatar_circle.dart';
+import '../../../core/widgets/map/lat_lng.dart';
+import '../../../core/widgets/map/locate_me_button.dart';
 import '../../../core/widgets/map/map_marker.dart';
 import '../../../core/widgets/map/map_route.dart';
 import '../../../core/widgets/map/google_map_widget.dart';
@@ -41,6 +44,7 @@ const _sheetMaxSize = 0.85;
 class _LiveMeetupScreenState extends State<LiveMeetupScreen> {
   Timer? _cooldownRefreshTimer;
   final _sheetController = DraggableScrollableController();
+  final _mapController = MapCenterController();
 
   /// User IDs with at least one story, fetched once when the meetup first
   /// loads (not on every live poll tick - that would mean N extra requests
@@ -115,6 +119,7 @@ class _LiveMeetupScreenState extends State<LiveMeetupScreen> {
           Positioned.fill(
             child: GoogleMapWidget(
               center: meetup.location.position,
+              centerController: _mapController,
               markers: [
                 MapMarker(
                   id: 'venue',
@@ -123,15 +128,17 @@ class _LiveMeetupScreenState extends State<LiveMeetupScreen> {
                   label: meetup.location.name,
                 ),
                 for (final member in meetup.members)
-                  MapMarker(
-                    id: member.userId,
-                    position: member.currentPosition(meetup.location.position),
-                    type: MapMarkerType.member,
-                    label: member.initials,
-                    isCurrentUser: member.isCurrentUser,
-                    caption: _captionFor(member),
-                    profileImageUrl: member.profileImageUrl,
-                  ),
+                  if (member.currentPosition(meetup.location.position)
+                      case final position?)
+                    MapMarker(
+                      id: member.userId,
+                      position: position,
+                      type: MapMarkerType.member,
+                      label: member.initials,
+                      isCurrentUser: member.isCurrentUser,
+                      caption: _captionFor(member),
+                      profileImageUrl: member.profileImageUrl,
+                    ),
                 for (final member in returningMembers)
                   MapMarker(
                     id: '${member.userId}-destination',
@@ -145,7 +152,9 @@ class _LiveMeetupScreenState extends State<LiveMeetupScreen> {
                   MapRoute(
                     id: '${member.userId}-route-home',
                     points: [
-                      member.currentPosition(meetup.location.position),
+                      // headingHome members always resolve to a real position
+                      // (reported, interpolated, or the venue they just left).
+                      member.currentPosition(meetup.location.position)!,
                       member.destinationPosition!,
                     ],
                   ),
@@ -159,6 +168,11 @@ class _LiveMeetupScreenState extends State<LiveMeetupScreen> {
             meetup: meetup,
             sheetController: _sheetController,
             membersWithStories: _membersWithStories,
+          ),
+          _LocateMeOverlay(
+            sheetController: _sheetController,
+            mapController: _mapController,
+            myPosition: meetup.currentUser.currentPosition(meetup.location.position),
           ),
           _StoryCameraOverlay(
             sheetController: _sheetController,
@@ -429,6 +443,76 @@ class _MemberSheet extends StatelessWidget {
   }
 }
 
+/// "Find me" FAB matching Google Maps' own current-location button, stacked
+/// directly above [_StoryCameraOverlay] and tracking [sheetController] the
+/// same way (see that class's doc comment for why it can't live inside the
+/// sheet's own builder).
+class _LocateMeOverlay extends StatefulWidget {
+  const _LocateMeOverlay({
+    required this.sheetController,
+    required this.mapController,
+    required this.myPosition,
+  });
+
+  final DraggableScrollableController sheetController;
+  final MapCenterController mapController;
+
+  /// The current user's own marker position on the map (see
+  /// `MeetupMember.currentPosition`), i.e. the exact spot their pin is
+  /// already drawn at. Preferred over a fresh GPS fix so this button always
+  /// centers on the pin the user is actually looking at, rather than a
+  /// slightly different reading from a brand-new location request.
+  final LatLng? myPosition;
+
+  @override
+  State<_LocateMeOverlay> createState() => _LocateMeOverlayState();
+}
+
+class _LocateMeOverlayState extends State<_LocateMeOverlay> {
+  bool _locating = false;
+
+  Future<void> _goToMyLocation() async {
+    final knownPosition = widget.myPosition;
+    if (knownPosition != null) {
+      await widget.mapController.moveTo(knownPosition);
+      return;
+    }
+
+    // No pin yet (e.g. the very first GPS fix hasn't landed) - fall back to
+    // requesting one directly so the button still works.
+    setState(() => _locating = true);
+    try {
+      final position = await context.read<LocationService>().getCurrentPosition();
+      if (!mounted) return;
+      await widget.mapController.moveTo(position);
+    } on LocationServiceException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+    } finally {
+      if (mounted) setState(() => _locating = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: widget.sheetController,
+      builder: (context, _) {
+        final screenHeight = MediaQuery.sizeOf(context).height;
+        final extent = widget.sheetController.isAttached
+            ? widget.sheetController.size
+            : _sheetInitialSize;
+        final sheetTop = screenHeight * (1 - extent);
+        return Positioned(
+          top: sheetTop - 77,
+          right: AppSpacing.lg,
+          child: LocateMeButton(loading: _locating, onPressed: _goToMyLocation),
+        );
+      },
+    );
+  }
+}
+
 /// Floating shutter button pinned to the top-right of [_MemberSheet]'s
 /// current top edge. Lives in [LiveMeetupScreen]'s own top-level `Stack`
 /// (a sibling of the sheet, not nested inside it) and tracks [sheetController]
@@ -556,7 +640,7 @@ class _CurrentUserStatusCard extends StatelessWidget {
         );
       case MemberArrivalStatus.notLeftYet:
         return _StatusCard(
-          headline: 'คุณควรออกเดินทางภายได้แล้ว',
+          headline: 'ออกสักทีเถอะ!',
           imagePath: 'assets/images/mascots/prep.png',
           action: _StatusActionPill(
             label: 'ออกแล้วจ้า',
@@ -658,7 +742,6 @@ class _StatusActionPill extends StatelessWidget {
         style: FilledButton.styleFrom(
           backgroundColor: AppColors.textBody,
           foregroundColor: AppColors.bgBase,
-          side: const BorderSide(color: AppColors.accentDanger, width: 2),
           shape: const StadiumBorder(),
         ),
       ),

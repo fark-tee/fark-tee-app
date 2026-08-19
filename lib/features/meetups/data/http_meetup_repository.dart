@@ -61,6 +61,15 @@ class HttpMeetupRepository implements MeetupRepository {
   /// until the user re-triggers "Go Home".
   final Map<String, ({String label, LatLng position})> _activeReturnTargets = {};
 
+  /// This device's last-fetched arrival status per meetup, from the previous
+  /// [_pushUpdate] tick. Used to keep reporting this device's real GPS
+  /// position while [MemberArrivalStatus.notLeftYet] - before the user has
+  /// tapped "leave" - so other members see where this member actually is
+  /// (e.g. still at home) instead of no pin at all; an unknown/missing entry
+  /// (the very first tick after opening the live screen) is treated the same
+  /// way, since PENDING_DEPARTURE is the common starting state.
+  final Map<String, MemberArrivalStatus> _lastKnownArrivalStatus = {};
+
   final Map<String, StreamController<Meetup>> _liveControllers = {};
   final Map<String, Timer> _liveTimers = {};
 
@@ -344,13 +353,16 @@ class HttpMeetupRepository implements MeetupRepository {
 
     final isDeparting = _activeDepartMeetupIds.contains(meetupId);
     final returnTarget = _activeReturnTargets[meetupId];
+    final lastStatus = _lastKnownArrivalStatus[meetupId];
+    final isPendingDeparture =
+        lastStatus == null || lastStatus == MemberArrivalStatus.notLeftYet;
     debugPrint(
       '[live:$meetupId] tick - isDeparting=$isDeparting '
-      'returnTarget=$returnTarget',
+      'isPendingDeparture=$isPendingDeparture returnTarget=$returnTarget',
     );
 
     LatLng? currentPosition;
-    if (isDeparting || returnTarget != null) {
+    if (isDeparting || returnTarget != null || isPendingDeparture) {
       try {
         currentPosition = await _locationService.getCurrentPosition();
         debugPrint('[live:$meetupId] got GPS fix: $currentPosition');
@@ -402,6 +414,7 @@ class HttpMeetupRepository implements MeetupRepository {
       }
     }
 
+    _lastKnownArrivalStatus[meetupId] = meetup.currentUser.arrivalStatus;
     if (!controller.isClosed) controller.add(meetup);
   }
 
