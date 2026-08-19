@@ -111,7 +111,7 @@ class _NudgeAlertScreenState extends State<NudgeAlertScreen> {
                     ),
                     const SizedBox(height: AppSpacing.xxl),
                     Text(
-                      'รีบมาได้แล้ว\nเพื่อนตามแล้ว!!',
+                      'โด้น โดนแล้วละ!!\n จะมาได้ยังไงเนี่ย?',
                       textAlign: TextAlign.center,
                       style: AppTextStyles.displayLg.copyWith(fontSize: 32, height: 1.3),
                     ),
