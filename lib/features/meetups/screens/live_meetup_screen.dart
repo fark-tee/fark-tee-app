@@ -627,28 +627,30 @@ class _CurrentUserStatusCard extends StatelessWidget {
     }
 
     final currentUser = meetup.currentUser;
+    final isPastMeetupTime = DateTime.now().isAfter(meetup.startTime);
 
     switch (currentUser.arrivalStatus) {
       case MemberArrivalStatus.arrived:
-        return const _StatusCard(
-          headline: 'ฝากทีไปตามเพื่อนดีกว่า',
-          imagePath: 'assets/images/mascots/waiting.png',
+        return _StatusCard(
+          headline: isPastMeetupTime
+              ? 'โด้นนน โดนสักทีเถอะ!!!'
+              : 'รอเพื่อนแปป',
+          imagePath: isPastMeetupTime
+              ? 'assets/images/mascots/t.png'
+              : 'assets/images/mascots/waiting.png',
         );
       case MemberArrivalStatus.onTheWay:
-        final aFriendArrived = meetup.otherMembers.any(
-          (m) => m.arrivalStatus == MemberArrivalStatus.arrived,
-        );
         return _StatusCard(
-          headline: aFriendArrived
-              ? 'สายแล้ว!!\nเพื่อนกำลังรอคุณอยู่'
-              : 'กำลังเดินทางไปจุดนัด',
-          imagePath: aFriendArrived
+          headline: isPastMeetupTime
+              ? 'สายแล้ว!!\nเพื่อนกำลังสาปคุณอยู่'
+              : 'กำลังเดินทางไป',
+          imagePath: isPastMeetupTime
               ? 'assets/images/mascots/late.png'
               : 'assets/images/mascots/walking.png',
         );
       case MemberArrivalStatus.notLeftYet:
         return _StatusCard(
-          headline: 'ออกสักทีเถอะ!',
+          headline: 'ออกได้ละ!!!',
           imagePath: 'assets/images/mascots/prep.png',
           action: _StatusActionPill(
             label: 'ออกแล้วจ้า',
@@ -889,7 +891,7 @@ class _NudgeButton extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 6),
-            Text(isOnCooldown ? 'โดนละ' : 'ฝากที'),
+            Text(isOnCooldown ? 'โดนละ' : 'สักที'),
           ],
         ),
       ),

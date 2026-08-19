@@ -131,7 +131,7 @@ class _SplashScreen extends StatelessWidget {
           children: [
             Image.asset('assets/images/logo.png', width: 120, height: 120),
             const SizedBox(height: AppSpacing.lg),
-            Text('ฝากที', style: AppTextStyles.displayLg),
+            Text('สักที', style: AppTextStyles.displayLg),
             const SizedBox(height: AppSpacing.xxl),
             const CircularProgressIndicator(),
           ],

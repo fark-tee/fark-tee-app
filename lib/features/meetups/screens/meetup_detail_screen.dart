@@ -261,12 +261,12 @@ class _LiveMembersSection extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                'ถ่ายทอดสด · ถึงแล้ว ${meetup.arrivedCount} คน',
+                'ถึงแล้ว ${meetup.arrivedCount} คน',
                 style: AppTextStyles.titleMd.copyWith(color: BadgeColors.positive),
               ),
               const SizedBox(height: AppSpacing.md),
               PillButton(
-                label: 'ดูตำแหน่งสด',
+                label: 'อยู่ไหนกันแล้ว',
                 onPressed: () => context.push('/meetup/${meetup.id}/live'),
               ),
             ],
