@@ -52,6 +52,10 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
         await notificationService.showFullScreenNudgeAlert(fromDisplayName: fromDisplayName);
       case 'checkin_request':
         await notificationService.showFullScreenCheckInAlert(fromDisplayName: fromDisplayName);
+      case 'checkin_emergency':
+        await notificationService.showFullScreenCheckInEmergencyAlert(
+          fromDisplayName: fromDisplayName,
+        );
     }
   } catch (e) {
     debugPrint('[nudge][bg isolate] failed to show full-screen alert: $e');

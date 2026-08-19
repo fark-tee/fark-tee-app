@@ -103,6 +103,8 @@ class AuthController extends ChangeNotifier {
     required String displayName,
     required String username,
     File? profileImageFile,
+    String emergencyContactName = '',
+    String emergencyContactPhone = '',
   }) async {
     final trimmedName = displayName.trim();
     final trimmedUsername = username.trim();
@@ -125,6 +127,8 @@ class AuthController extends ChangeNotifier {
       user = await _authRepository.updateProfile(
         displayName: trimmedName,
         username: trimmedUsername,
+        emergencyContactName: emergencyContactName.trim(),
+        emergencyContactPhone: emergencyContactPhone.trim(),
       );
       pendingDisplayName = null;
       pendingProfileImageUrl = null;

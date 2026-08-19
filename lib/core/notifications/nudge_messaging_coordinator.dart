@@ -2,11 +2,13 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 
 import '../../features/meetups/screens/checkin_alert_screen.dart';
+import '../../features/meetups/screens/emergency_alert_screen.dart';
 import '../../features/meetups/screens/nudge_alert_screen.dart';
 import 'nudge_notification_service.dart';
 
 const String _nudgeDataType = 'nudge';
 const String _checkInDataType = 'checkin_request';
+const String _checkInEmergencyDataType = 'checkin_emergency';
 const String _defaultNudgerName = 'เพื่อนของคุณ';
 
 /// Wires the full FCM nudge lifecycle to the full-screen alert screen:
@@ -58,20 +60,15 @@ class NudgeMessagingCoordinator {
         _navigateToNudgeAlert(fromDisplayName: _defaultNudgerName);
         return;
       }
-      if (launchPayload == checkInNotificationPayload) {
-        // The meetupId isn't carried by the local notification payload
-        // (only by the FCM data message below) - if the app was cold
-        // started by tapping this local notification specifically, fall
-        // through to checking FCM's own initial message for it instead of
-        // guessing.
+      if (launchPayload == checkInNotificationPayload ||
+          launchPayload == checkInEmergencyNotificationPayload) {
+        // Neither the meetupId nor the emergency contact fields are carried
+        // by the local notification payload (only by the FCM data message
+        // below) - if the app was cold started by tapping this local
+        // notification specifically, fall through to checking FCM's own
+        // initial message for them instead of guessing.
         final initialMessage = await FirebaseMessaging.instance.getInitialMessage();
-        if (initialMessage != null && initialMessage.data['type'] == _checkInDataType) {
-          _navigateToCheckInAlert(
-            meetupId: initialMessage.data['meetupId'] as String?,
-            fromDisplayName:
-                initialMessage.data['fromDisplayName'] as String? ?? _defaultNudgerName,
-          );
-        }
+        if (initialMessage != null) _dispatch(initialMessage.data);
         return;
       }
     } catch (e) {
@@ -80,19 +77,7 @@ class NudgeMessagingCoordinator {
 
     try {
       final initialMessage = await FirebaseMessaging.instance.getInitialMessage();
-      if (initialMessage == null) return;
-      if (initialMessage.data['type'] == _nudgeDataType) {
-        _navigateToNudgeAlert(
-          fromDisplayName:
-              initialMessage.data['fromDisplayName'] as String? ?? _defaultNudgerName,
-        );
-      } else if (initialMessage.data['type'] == _checkInDataType) {
-        _navigateToCheckInAlert(
-          meetupId: initialMessage.data['meetupId'] as String?,
-          fromDisplayName:
-              initialMessage.data['fromDisplayName'] as String? ?? _defaultNudgerName,
-        );
-      }
+      if (initialMessage != null) _dispatch(initialMessage.data);
     } catch (e) {
       debugPrint('[nudge] checkForInitialNudge (FCM initial message) failed: $e');
     }
@@ -102,29 +87,28 @@ class NudgeMessagingCoordinator {
     // Foreground data-only messages never auto-display a system
     // notification, so jump straight to the full-screen alert - it starts
     // the looping sound itself as soon as it mounts.
-    switch (message.data['type']) {
-      case _nudgeDataType:
-        _navigateToNudgeAlert(
-          fromDisplayName: message.data['fromDisplayName'] as String? ?? _defaultNudgerName,
-        );
-      case _checkInDataType:
-        _navigateToCheckInAlert(
-          meetupId: message.data['meetupId'] as String?,
-          fromDisplayName: message.data['fromDisplayName'] as String? ?? _defaultNudgerName,
-        );
-    }
+    _dispatch(message.data);
   }
 
   void _handleMessageOpenedApp(RemoteMessage message) {
-    switch (message.data['type']) {
+    _dispatch(message.data);
+  }
+
+  void _dispatch(Map<String, dynamic> data) {
+    final fromDisplayName = data['fromDisplayName'] as String? ?? _defaultNudgerName;
+    switch (data['type']) {
       case _nudgeDataType:
-        _navigateToNudgeAlert(
-          fromDisplayName: message.data['fromDisplayName'] as String? ?? _defaultNudgerName,
-        );
+        _navigateToNudgeAlert(fromDisplayName: fromDisplayName);
       case _checkInDataType:
         _navigateToCheckInAlert(
-          meetupId: message.data['meetupId'] as String?,
-          fromDisplayName: message.data['fromDisplayName'] as String? ?? _defaultNudgerName,
+          meetupId: data['meetupId'] as String?,
+          fromDisplayName: fromDisplayName,
+        );
+      case _checkInEmergencyDataType:
+        _navigateToEmergencyAlert(
+          fromDisplayName: fromDisplayName,
+          emergencyContactName: data['emergencyContactName'] as String? ?? '',
+          emergencyContactPhone: data['emergencyContactPhone'] as String? ?? '',
         );
     }
   }
@@ -157,6 +141,28 @@ class NudgeMessagingCoordinator {
       MaterialPageRoute(
         fullscreenDialog: true,
         builder: (_) => CheckInAlertScreen(meetupId: meetupId, fromDisplayName: fromDisplayName),
+      ),
+    );
+  }
+
+  void _navigateToEmergencyAlert({
+    required String fromDisplayName,
+    required String emergencyContactName,
+    required String emergencyContactPhone,
+  }) {
+    final navigator = _navigatorKey.currentState;
+    if (navigator == null) {
+      debugPrint('[emergency] root navigator not attached yet - dropping emergency alert nav');
+      return;
+    }
+    navigator.push(
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (_) => EmergencyAlertScreen(
+          fromDisplayName: fromDisplayName,
+          emergencyContactName: emergencyContactName,
+          emergencyContactPhone: emergencyContactPhone,
+        ),
       ),
     );
   }

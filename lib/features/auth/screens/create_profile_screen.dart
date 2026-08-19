@@ -26,6 +26,8 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
   late final TextEditingController _usernameController;
+  late final TextEditingController _emergencyContactNameController;
+  late final TextEditingController _emergencyContactPhoneController;
   bool _saving = false;
 
   /// Set only if the user picks their own photo from the gallery. When null,
@@ -41,12 +43,16 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
     );
     // Google doesn't provide a username - the user must type their own.
     _usernameController = TextEditingController();
+    _emergencyContactNameController = TextEditingController();
+    _emergencyContactPhoneController = TextEditingController();
   }
 
   @override
   void dispose() {
     _nameController.dispose();
     _usernameController.dispose();
+    _emergencyContactNameController.dispose();
+    _emergencyContactPhoneController.dispose();
     super.dispose();
   }
 
@@ -59,6 +65,17 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
       return 'ใช้ได้เฉพาะตัวอักษร ตัวเลข และขีดล่างเท่านั้น';
     }
     return context.read<AuthController>().usernameError;
+  }
+
+  /// Optional field - only validated (as a plausible phone number) once the
+  /// user has actually typed something.
+  String? _validateEmergencyContactPhone(String? value) {
+    final trimmed = value?.trim() ?? '';
+    if (trimmed.isEmpty) return null;
+    if (!RegExp(r'^[0-9+\-\s]{9,15}$').hasMatch(trimmed)) {
+      return 'เบอร์โทรไม่ถูกต้อง';
+    }
+    return null;
   }
 
   Future<void> _pickImage() async {
@@ -120,6 +137,8 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
       displayName: _nameController.text,
       username: _usernameController.text.trim(),
       profileImageFile: imageFile,
+      emergencyContactName: _emergencyContactNameController.text,
+      emergencyContactPhone: _emergencyContactPhoneController.text,
     );
     if (!mounted) return;
     setState(() => _saving = false);
@@ -203,6 +222,37 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
                   textInputAction: TextInputAction.done,
                   validator: _validateUsername,
                   onChanged: (_) => context.read<AuthController>().clearUsernameError(),
+                ),
+                const SizedBox(height: 24),
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'ผู้ติดต่อฉุกเฉิน (ไม่บังคับ)',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextFormField(
+                  controller: _emergencyContactNameController,
+                  decoration: const InputDecoration(
+                    labelText: 'ชื่อผู้ติดต่อฉุกเฉิน',
+                    border: OutlineInputBorder(),
+                  ),
+                  textInputAction: TextInputAction.next,
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _emergencyContactPhoneController,
+                  decoration: const InputDecoration(
+                    labelText: 'เบอร์โทรฉุกเฉิน',
+                    border: OutlineInputBorder(),
+                  ),
+                  keyboardType: TextInputType.phone,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'[0-9+\-\s]')),
+                  ],
+                  textInputAction: TextInputAction.done,
+                  validator: _validateEmergencyContactPhone,
                   onFieldSubmitted: (_) => _saving ? null : _submit(),
                 ),
                 if (authController.errorMessage != null) ...[

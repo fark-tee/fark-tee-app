@@ -36,6 +36,8 @@ class UserProfile {
     required this.ratingCount,
     required this.onTimeCount,
     required this.lateCount,
+    this.emergencyContactName = '',
+    this.emergencyContactPhone = '',
   });
 
   factory UserProfile.fromJson(Map<String, dynamic> json) {
@@ -49,6 +51,8 @@ class UserProfile {
       ratingCount: json['ratingCount'] as int,
       onTimeCount: json['onTimeCount'] as int,
       lateCount: json['lateCount'] as int,
+      emergencyContactName: json['emergencyContactName'] as String? ?? '',
+      emergencyContactPhone: json['emergencyContactPhone'] as String? ?? '',
     );
   }
 
@@ -61,4 +65,9 @@ class UserProfile {
   final int ratingCount;
   final int onTimeCount;
   final int lateCount;
+
+  /// Shown, with a tap-to-call action, to every other party member when this
+  /// user answers "not okay" to a check-in request. Empty when not set.
+  final String emergencyContactName;
+  final String emergencyContactPhone;
 }

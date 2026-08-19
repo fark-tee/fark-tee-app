@@ -48,10 +48,17 @@ class AuthRepository {
   Future<UserProfile> updateProfile({
     required String displayName,
     required String username,
+    String emergencyContactName = '',
+    String emergencyContactPhone = '',
   }) async {
     final response = await _apiClient.dio.patch<Map<String, dynamic>>(
       '/v1/me',
-      data: {'displayName': displayName, 'username': username},
+      data: {
+        'displayName': displayName,
+        'username': username,
+        'emergencyContactName': emergencyContactName,
+        'emergencyContactPhone': emergencyContactPhone,
+      },
     );
     return UserProfile.fromJson(response.data!);
   }

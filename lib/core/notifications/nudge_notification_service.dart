@@ -11,6 +11,10 @@ const String nudgeNotificationPayload = 'nudge_alert';
 /// to know you're okay" check-in request.
 const String checkInNotificationPayload = 'checkin_alert';
 
+/// Same idea as [nudgeNotificationPayload], for a "friend answered not okay"
+/// emergency broadcast.
+const String checkInEmergencyNotificationPayload = 'checkin_emergency_alert';
+
 /// Runs when a notification this app posted is tapped while the Dart VM
 /// backing the plugin call is a background isolate (i.e. the app process
 /// wasn't already running in the foreground). There is no live widget tree
@@ -63,6 +67,18 @@ class NudgeNotificationService {
     importance: Importance.max,
   );
 
+  static const String emergencyChannelId = 'checkin_emergency_channel';
+  static const String emergencyChannelName = 'แจ้งเตือนฉุกเฉิน';
+  static const String emergencyChannelDescription =
+      'แจ้งเตือนเต็มจอเมื่อเพื่อนตอบว่าไม่โอเคระหว่างเช็คอิน';
+
+  static const AndroidNotificationChannel _emergencyAndroidChannel = AndroidNotificationChannel(
+    emergencyChannelId,
+    emergencyChannelName,
+    description: emergencyChannelDescription,
+    importance: Importance.max,
+  );
+
   bool _initialized = false;
 
   /// Sets up the plugin, creates the Android notification channel, and
@@ -96,6 +112,7 @@ class NudgeNotificationService {
           .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
       await androidPlugin?.createNotificationChannel(_androidChannel);
       await androidPlugin?.createNotificationChannel(_checkInAndroidChannel);
+      await androidPlugin?.createNotificationChannel(_emergencyAndroidChannel);
       // Android 13+ (API 33) requires this explicit runtime request for
       // POST_NOTIFICATIONS - a no-op on older Android versions.
       await androidPlugin?.requestNotificationsPermission();
@@ -195,6 +212,43 @@ class NudgeNotificationService {
       );
     } catch (e, st) {
       debugPrint('[checkin] showFullScreenCheckInAlert failed: $e\n$st');
+    }
+  }
+
+  /// Same shape as [showFullScreenNudgeAlert], for a "your friend answered
+  /// not okay" emergency broadcast.
+  Future<void> showFullScreenCheckInEmergencyAlert({required String fromDisplayName}) async {
+    final androidDetails = AndroidNotificationDetails(
+      emergencyChannelId,
+      emergencyChannelName,
+      channelDescription: emergencyChannelDescription,
+      importance: Importance.max,
+      priority: Priority.max,
+      fullScreenIntent: true,
+      category: AndroidNotificationCategory.call,
+      visibility: NotificationVisibility.public,
+      ongoing: false,
+      autoCancel: true,
+    );
+    const iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+      sound: 'default',
+      interruptionLevel: InterruptionLevel.timeSensitive,
+    );
+    final details = NotificationDetails(android: androidDetails, iOS: iosDetails);
+
+    try {
+      await plugin.show(
+        DateTime.now().millisecondsSinceEpoch ~/ 1000,
+        '$fromDisplayName ตอบว่าไม่โอเค!',
+        'แตะเพื่อดูเบอร์ติดต่อฉุกเฉิน',
+        details,
+        payload: checkInEmergencyNotificationPayload,
+      );
+    } catch (e, st) {
+      debugPrint('[emergency] showFullScreenCheckInEmergencyAlert failed: $e\n$st');
     }
   }
 
