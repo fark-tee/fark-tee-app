@@ -121,6 +121,18 @@ class _LiveMeetupScreenState extends State<LiveMeetupScreen> {
           m.destinationPosition != null,
     );
 
+    // Depart-leg (onTheWay) and return-leg (headingHome) members currently
+    // traveling, with an OSRM-computed road route already fetched for them
+    // (see HttpMeetupRepository._attachRoutePolylines) - no line is drawn
+    // until the real route arrives, rather than falling back to a straight
+    // line between two points.
+    final travelingMembers = meetup.members.where(
+      (m) =>
+          (m.arrivalStatus == MemberArrivalStatus.onTheWay ||
+              m.arrivalStatus == MemberArrivalStatus.headingHome) &&
+          (m.routePolyline?.isNotEmpty ?? false),
+    );
+
     return Scaffold(
       body: Stack(
         children: [
@@ -156,15 +168,12 @@ class _LiveMeetupScreenState extends State<LiveMeetupScreen> {
                   ),
               ],
               routes: [
-                for (final member in returningMembers)
+                for (final member in travelingMembers)
                   MapRoute(
-                    id: '${member.userId}-route-home',
-                    points: [
-                      // headingHome members always resolve to a real position
-                      // (reported, interpolated, or the venue they just left).
-                      member.currentPosition(meetup.location.position)!,
-                      member.destinationPosition!,
-                    ],
+                    id:
+                        '${member.userId}-route-'
+                        '${member.arrivalStatus == MemberArrivalStatus.onTheWay ? 'depart' : 'home'}',
+                    points: member.routePolyline!,
                   ),
               ],
             ),

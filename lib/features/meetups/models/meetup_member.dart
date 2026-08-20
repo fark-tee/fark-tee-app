@@ -60,6 +60,12 @@ class MeetupMember {
   String? destinationLabel;
   LatLng? destinationPosition;
 
+  /// This member's current trip's OSRM-computed road route (depart leg: to
+  /// the venue; return leg: to [destinationPosition]), decoded from the
+  /// backend's polyline. Null until fetched, or once the member isn't
+  /// currently traveling.
+  List<LatLng>? routePolyline;
+
   /// This member's current "are you okay?" safety check status, and who
   /// asked (only meaningful while [checkInStatus] is
   /// [CheckInStatus.pending]).

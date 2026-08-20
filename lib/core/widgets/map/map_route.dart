@@ -1,8 +1,9 @@
 import 'lat_lng.dart';
 
-/// A line drawn between two or more points on a [GoogleMapWidget], e.g. the
-/// straight path from a returning member's live position to their chosen
-/// "heading home" destination.
+/// A road-following path drawn on a [GoogleMapWidget], decoded from an
+/// OSRM-computed polyline (see `decodePolyline`) - e.g. a member's route from
+/// their trip's starting position to the meetup venue (depart) or to their
+/// chosen destination (return).
 class MapRoute {
   const MapRoute({required this.id, required this.points});
 

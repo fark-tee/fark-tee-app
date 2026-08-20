@@ -12,6 +12,7 @@ import '../../../core/auth/auth_models.dart';
 import '../../../core/location/location_service.dart';
 import '../../../core/utils/mock_identity.dart';
 import '../../../core/widgets/map/lat_lng.dart';
+import '../../../core/widgets/map/polyline_codec.dart';
 import '../models/grouped_meetups.dart';
 import '../models/meetup.dart';
 import '../models/meetup_enums.dart';
@@ -74,6 +75,12 @@ class HttpMeetupRepository implements MeetupRepository {
 
   final Map<String, StreamController<Meetup>> _liveControllers = {};
   final Map<String, Timer> _liveTimers = {};
+
+  /// Route polylines already fetched for a given `partyId:userId:direction`,
+  /// keyed since a trip's route is computed once by OSRM when it starts and
+  /// never changes afterwards - so once fetched, it never needs re-fetching
+  /// on later poll ticks.
+  final Map<String, List<LatLng>> _routeCache = {};
 
   static const _arrivalRadiusMeters = 100.0;
   static const _pollInterval = Duration(seconds: 2);
@@ -544,7 +551,50 @@ class HttpMeetupRepository implements MeetupRepository {
     );
     _reconcileActiveDepart(party.id, meetup);
     _attachReturnDestination(party.id, meetup);
+    await _attachRoutePolylines(party.id, meetup);
     return meetup;
+  }
+
+  /// Fetches and attaches each currently-traveling member's OSRM route
+  /// polyline (depart leg: [MemberArrivalStatus.onTheWay]; return leg:
+  /// [MemberArrivalStatus.headingHome]) - see [_fetchMemberRoute].
+  Future<void> _attachRoutePolylines(String partyId, Meetup meetup) async {
+    await Future.wait(
+      meetup.members.map((member) async {
+        final direction = switch (member.arrivalStatus) {
+          MemberArrivalStatus.onTheWay => 'DEPART',
+          MemberArrivalStatus.headingHome => 'RETURN',
+          _ => null,
+        };
+        if (direction == null) return;
+        member.routePolyline = await _fetchMemberRoute(partyId, member.userId, direction);
+      }),
+    );
+  }
+
+  /// Returns the road route for [userId]'s current [direction] leg within
+  /// [partyId], from the cache if already fetched (see [_routeCache]) or by
+  /// calling the backend otherwise. Returns null on a network failure, or if
+  /// the member's latest trip turns out to be for a different direction than
+  /// expected (e.g. a stale request racing a leg change).
+  Future<List<LatLng>?> _fetchMemberRoute(String partyId, String userId, String direction) async {
+    final cacheKey = '$partyId:$userId:$direction';
+    final cached = _routeCache[cacheKey];
+    if (cached != null) return cached;
+
+    try {
+      final response = await _apiClient.dio.get<Map<String, dynamic>>(
+        '/v1/parties/$partyId/members/$userId/trip',
+      );
+      final trip = TripDto.fromJson(response.data!);
+      if (trip.direction != direction || trip.polyline.isEmpty) return null;
+
+      final points = decodePolyline(trip.polyline);
+      _routeCache[cacheKey] = points;
+      return points;
+    } catch (_) {
+      return null;
+    }
   }
 
   /// Attaches this device's chosen "go home" destination (tracked only in

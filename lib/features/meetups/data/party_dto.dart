@@ -145,3 +145,49 @@ class PositionDto {
   final int estimatedDurationSeconds;
   final DateTime? estimatedArrivalAt;
 }
+
+/// Mirrors the backend's `TripResponse`: a single depart or return trip,
+/// including its OSRM-computed route polyline (see [decodePolyline]).
+class TripDto {
+  TripDto({
+    required this.id,
+    required this.partyId,
+    required this.userId,
+    required this.direction,
+    required this.destinationName,
+    required this.destinationLat,
+    required this.destinationLng,
+    required this.startedAt,
+    required this.polyline,
+  });
+
+  factory TripDto.fromJson(Map<String, dynamic> json) {
+    return TripDto(
+      id: json['id'] as String,
+      partyId: json['partyId'] as String,
+      userId: json['userId'] as String,
+      direction: json['direction'] as String,
+      destinationName: json['destinationName'] as String,
+      destinationLat: (json['destinationLat'] as num).toDouble(),
+      destinationLng: (json['destinationLng'] as num).toDouble(),
+      startedAt: DateTime.parse(json['startedAt'] as String),
+      polyline: json['polyline'] as String? ?? '',
+    );
+  }
+
+  final String id;
+  final String partyId;
+  final String userId;
+
+  /// Raw backend direction string: "DEPART" or "RETURN".
+  final String direction;
+  final String destinationName;
+  final double destinationLat;
+  final double destinationLng;
+  final DateTime startedAt;
+
+  /// The trip's road route from its starting position to its destination,
+  /// as a Google polyline (precision 5), computed once by OSRM when the trip
+  /// started.
+  final String polyline;
+}
