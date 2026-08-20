@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/google_logo.dart';
 import '../auth_controller.dart';
 
 /// Step 1: create an account by signing in with Google.
@@ -40,14 +43,48 @@ class _SignInScreenState extends State<SignInScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Image.asset('assets/images/logo.png', width: 96),
-                const SizedBox(height: 16),
+                SizedBox(
+                  width: 168,
+                  height: 168,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Container(
+                        width: 168,
+                        height: 168,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: RadialGradient(
+                            colors: [
+                              AppColors.accentDanger.withValues(alpha: 0.4),
+                              AppColors.accentDanger.withValues(alpha: 0),
+                            ],
+                          ),
+                        ),
+                      ),
+                      Image.asset('assets/images/logo.png', width: 132),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
                 Text(
-                  'ยินดีต้อนรับสู่ ฝากที',
-                  style: Theme.of(context).textTheme.headlineSmall,
+                  'ฝากที',
+                  style: GoogleFonts.prompt(
+                    fontSize: 40,
+                    fontWeight: FontWeight.w800,
+                    height: 1.1,
+                    letterSpacing: -0.5,
+                    color: AppColors.textPrimary,
+                  ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 8),
+                Text(
+                  'ยินดีต้อนรับ',
+                  style: Theme.of(context).textTheme.titleMedium,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 4),
                 const Text(
                   'สร้างบัญชีเพื่อเริ่มต้นใช้งาน',
                   textAlign: TextAlign.center,
@@ -61,7 +98,7 @@ class _SignInScreenState extends State<SignInScreen> {
                           height: 16,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : const Icon(Icons.login),
+                      : const GoogleLogo(size: 18),
                   label: Text(
                     _loading ? 'กำลังเข้าสู่ระบบ...' : 'เข้าสู่ระบบด้วย Google',
                   ),
