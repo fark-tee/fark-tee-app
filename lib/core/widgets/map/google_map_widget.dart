@@ -246,7 +246,7 @@ class _GoogleMapViewState extends State<_GoogleMapView> {
   gmaps.Polyline _toGooglePolyline(MapRoute route) => gmaps.Polyline(
     polylineId: gmaps.PolylineId(route.id),
     points: route.points.map(_toGoogleLatLng).toList(),
-    color: AppColors.accentDanger,
+    color: route.color,
     width: 4,
     patterns: [gmaps.PatternItem.dash(16), gmaps.PatternItem.gap(10)],
   );

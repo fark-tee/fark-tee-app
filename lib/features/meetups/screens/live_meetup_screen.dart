@@ -49,6 +49,23 @@ const _reviewEligibleStatuses = {
   MemberArrivalStatus.returned,
 };
 
+/// Fixed, visually-distinct colors for member route lines - picked by hashing
+/// [MeetupMember.userId] (see [_routeColorFor]) so each member always gets
+/// the same color across rebuilds, independent of member list order.
+const _routeColors = [
+  Color(0xFF2E86FF),
+  Color(0xFFFF6B35),
+  Color(0xFF00B894),
+  Color(0xFFE84393),
+  Color(0xFFFDCB6E),
+  Color(0xFF9B59B6),
+  Color(0xFF00CEC9),
+  Color(0xFFD63031),
+];
+
+Color _routeColorFor(String userId) =>
+    _routeColors[userId.hashCode.abs() % _routeColors.length];
+
 class _LiveMeetupScreenState extends State<LiveMeetupScreen> {
   Timer? _cooldownRefreshTimer;
   final _sheetController = DraggableScrollableController();
@@ -174,6 +191,7 @@ class _LiveMeetupScreenState extends State<LiveMeetupScreen> {
                         '${member.userId}-route-'
                         '${member.arrivalStatus == MemberArrivalStatus.onTheWay ? 'depart' : 'home'}',
                     points: member.routePolyline!,
+                    color: _routeColorFor(member.userId),
                   ),
               ],
             ),
@@ -845,7 +863,8 @@ class _MemberRow extends StatelessWidget {
             _ReviewButton(
               onPressed: () => context.push('/meetup/$meetupId/review'),
             ),
-          ] else if (!member.isCurrentUser) ...[
+          ] else if (!member.isCurrentUser &&
+              member.arrivalStatus == MemberArrivalStatus.notLeftYet) ...[
             const SizedBox(width: AppSpacing.sm),
             _NudgeButton(
               isOnCooldown: isOnCooldown,
